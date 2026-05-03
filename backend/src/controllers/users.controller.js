@@ -112,9 +112,79 @@ const createPatient = async (req, res) => {
   }
 };
 
+const updatePatient = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      full_name,
+      email,
+      phone,
+    } = req.body;
+
+    const { data, error } = await supabase
+      .from("users")
+      .update({
+        full_name,
+        email,
+        phone,
+      })
+      .eq("id", id)
+      .eq("role", "patient")
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(400).json({
+        message: "Error updating patient",
+        error: error.message,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Patient updated successfully",
+      patient: data,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};
+
+const deletePatient = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { error } = await supabase
+      .from("users")
+      .delete()
+      .eq("id", id)
+      .eq("role", "patient");
+
+    if (error) {
+      return res.status(400).json({
+        message: "Error deleting patient",
+        error: error.message,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Patient deleted successfully",
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};
 
 module.exports = {
     getAllPatients,
     getPatientById,
     createPatient,
+    updatePatient,
+    deletePatient
 };
