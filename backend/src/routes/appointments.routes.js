@@ -6,6 +6,7 @@ const {
     getAppointmentById,
     getAppointmentsByDoctorId,
     getAppointmentsByPatientId,
+    getAvailableSlots,
     createAppointment,
     updateAppointmentStatus,
     cancelAppointment,
@@ -13,6 +14,7 @@ const {
 
 router.get("/", getAllAppointments);
 router.post("/", createAppointment);
+router.get("/available-slots/:doctorId", getAvailableSlots);
 router.get("/doctor/:doctorId", getAppointmentsByDoctorId);
 router.get("/patient/:patientId", getAppointmentsByPatientId);
 router.patch("/:id/status", updateAppointmentStatus);

@@ -1,5 +1,17 @@
 const supabase = require("../config/supabase");
 
+const timeToMinutes = (time) => {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
+const minutesToTime = (minutes) => {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:00`;
+};
+
 const getAllAppointments = async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -179,6 +191,127 @@ const createAppointment = async (req, res) => {
   }
 };
 
+const getAvailableSlots = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const { date } = req.query;
+
+    if (!date) {
+      return res.status(400).json({
+        message: "Date is required",
+      });
+    }
+
+    const dayOfWeek = new Date(date).toLocaleDateString("en-US", {
+      weekday: "long",
+    }).toLowerCase();
+
+    const { data: schedule, error: scheduleError } = await supabase
+      .from("schedules")
+      .select("*")
+      .eq("doctor_id", doctorId)
+      .eq("day_of_week", dayOfWeek)
+      .lte("valid_from", date)
+      .gte("valid_to", date)
+      .maybeSingle();
+
+    if (scheduleError) {
+      return res.status(500).json({
+        message: "Error fetching doctor schedule",
+        error: scheduleError.message,
+      });
+    }
+
+    if (!schedule) {
+      return res.status(200).json({
+        message: "Doctor is not available on this date",
+        doctorId,
+        date,
+        dayOfWeek,
+        availableSlots: [],
+      });
+    }
+
+    const startMinutes = timeToMinutes(schedule.start_time);
+    const endMinutes = timeToMinutes(schedule.end_time);
+    const pauseStartMinutes = schedule.pause_start
+      ? timeToMinutes(schedule.pause_start)
+      : null;
+    const pauseEndMinutes = schedule.pause_end
+      ? timeToMinutes(schedule.pause_end)
+      : null;
+
+    const availableSlots = [];
+
+    for (
+      let current = startMinutes;
+      current + schedule.slot_duration <= endMinutes;
+      current += schedule.slot_duration
+    ) {
+      const slotStart = current;
+      const slotEnd = current + schedule.slot_duration;
+
+      const overlapsPause =
+        pauseStartMinutes !== null &&
+        pauseEndMinutes !== null &&
+        slotStart < pauseEndMinutes &&
+        slotEnd > pauseStartMinutes;
+
+      if (!overlapsPause) {
+        availableSlots.push({
+          start_time: `${date}T${minutesToTime(slotStart)}`,
+          end_time: `${date}T${minutesToTime(slotEnd)}`,
+        });
+      }
+    }
+
+    const dayStart = `${date}T00:00:00`;
+    const dayEnd = `${date}T23:59:59`;
+
+    const { data: bookedAppointments, error: bookedError } = await supabase
+      .from("appointments")
+      .select("start_time, end_time")
+      .eq("doctor_id", doctorId)
+      .gte("start_time", dayStart)
+      .lte("start_time", dayEnd)
+      .neq("status", "cancelled");
+
+    if (bookedError) {
+      return res.status(500).json({
+        message: "Error fetching booked appointments",
+        error: bookedError.message,
+      });
+    }
+
+    const finalAvailableSlots = availableSlots.filter((slot) => {
+      const slotStart = new Date(slot.start_time);
+      const slotEnd = new Date(slot.end_time);
+
+      const isBooked = bookedAppointments.some((appointment) => {
+        const appointmentStart = new Date(appointment.start_time);
+        const appointmentEnd = new Date(appointment.end_time);
+
+        return slotStart < appointmentEnd && slotEnd > appointmentStart;
+      });
+
+      return !isBooked;
+    });
+
+    return res.status(200).json({
+      message: "Available slots fetched successfully",
+      doctorId,
+      date,
+      dayOfWeek,
+      availableSlots: finalAvailableSlots,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};
+
 const updateAppointmentStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -262,5 +395,6 @@ module.exports = {
     getAppointmentsByPatientId,
     createAppointment,
     updateAppointmentStatus,
-    cancelAppointment
+    cancelAppointment,
+    getAvailableSlots,
 };
