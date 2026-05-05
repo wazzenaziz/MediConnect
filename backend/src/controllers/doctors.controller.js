@@ -136,6 +136,24 @@ const updateDoctor = async (req, res) => {
   try {
     const { id } = req.params;
 
+    const { data: existingDoctor, error: doctorError } = await supabase
+      .from("doctors")
+      .select("id, user_id")
+      .eq("id", id)
+      .single();
+    
+    if (doctorError || !existingDoctor) {
+      return res.status(404).json({
+        message: "Doctor not found",
+      });
+    }
+
+    if (req.user.role === "doctor" && existingDoctor.user_id !== req.user.id) {
+      return res.status(403).json({
+        message: "You can only update your own doctor profile",
+      });
+    }
+
     const {
       specialty,
       bio,
