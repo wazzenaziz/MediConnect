@@ -98,6 +98,12 @@ const getAppointmentsByPatientId = async (req, res) => {
   try {
     const { patientId } = req.params;
 
+    if (req.user.role === "patient" && req.user.id !== patientId) {
+      return res.status(403).json({
+        message: "You can only access your own appointments",
+      });
+    }
+
     const { data, error } = await supabase
       .from("appointments")
       .select("*")
@@ -126,14 +132,15 @@ const createAppointment = async (req, res) => {
   try {
     const {
       doctor_id,
-      patient_id,
       start_time,
       end_time,
     } = req.body;
 
-    if (!doctor_id || !patient_id || !start_time || !end_time ) {
+    const patient_id = req.user.id;
+
+    if (!doctor_id || !start_time || !end_time ) {
       return res.status(400).json({
-        message: "doctor_id, patient_id, start_time, end_time are required",
+        message: "doctor_id, start_time, end_time are required",
       });
     }
 
@@ -361,6 +368,24 @@ const updateAppointmentStatus = async (req, res) => {
 const cancelAppointment = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const { data: appointment, error: fetchError } = await supabase
+      .from("appointments")
+      .select("id, patient_id")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !appointment) {
+      return res.status(404).json({
+        message: "Appointment not found",
+      });
+    }
+
+    if (req.user.role === "patient" && appointment.patient_id !== req.user.id) {
+      return res.status(403).json({
+        message: "You can only cancel your own appointments",
+      });
+    }
 
     const { data, error } = await supabase
       .from("appointments")
