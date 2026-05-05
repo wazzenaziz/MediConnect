@@ -1,5 +1,8 @@
 const express = require("express");
 const router = express.Router();
+const authMiddleware = require("../middleware/auth.middleware");
+const roleMiddleware = require("../middleware/role.middleware");
+
 
 const {
         getAllPatients,
@@ -9,10 +12,10 @@ const {
         deletePatient
 } = require("../controllers/users.controller");
 
-router.get("/", getAllPatients);
-router.post("/", createPatient);
-router.get("/:id", getPatientById);
-router.patch("/:id", updatePatient);
-router.delete("/:id", deletePatient);
+router.get("/", authMiddleware, roleMiddleware("admin"), getAllPatients);
+router.post("/", authMiddleware, roleMiddleware("admin"), createPatient);
+router.get("/:id", authMiddleware, roleMiddleware("admin", "patient"), getPatientById);
+router.patch("/:id", authMiddleware, roleMiddleware("admin", "patient"), updatePatient);
+router.delete("/:id", authMiddleware, roleMiddleware("admin"), deletePatient);
 
 module.exports = router;
