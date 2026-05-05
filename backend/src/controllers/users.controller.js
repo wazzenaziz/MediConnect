@@ -30,6 +30,12 @@ const getPatientById = async (req, res) => {
   try {
     const { id } = req.params;
 
+    if (req.user.role === "patient" && req.user.id !== id) {
+      return res.status(403).json({
+        message: "You can only access your own profile",
+      });
+    }
+
     const { data, error } = await supabase
       .from("users")
       .select("*")
@@ -115,6 +121,12 @@ const createPatient = async (req, res) => {
 const updatePatient = async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (req.user.role === "patient" && req.user.id !== id) {
+      return res.status(403).json({
+        message: "You can only update your own profile",
+      });
+    }
 
     const {
       full_name,
