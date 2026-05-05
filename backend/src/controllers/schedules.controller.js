@@ -55,7 +55,7 @@ const getSchedulesByDoctorId = async (req, res) => {
 
 const createSchedule = async (req, res) => {
   try {
-    const {
+    let {
       doctor_id,
       day_of_week,
       start_time,
@@ -66,6 +66,22 @@ const createSchedule = async (req, res) => {
       valid_from,
       valid_to,
     } = req.body;
+
+    if (req.user.role === "doctor") {
+      const { data: doctorProfile, error: doctorError } = await supabase
+        .from("doctors")
+        .select("id")
+        .eq("user_id", req.user.id)
+        .single();
+
+      if (doctorError || !doctorProfile) {
+        return res.status(404).json({
+          message: "Doctor profile not found",
+        });
+      }
+
+      doctor_id = doctorProfile.id;
+    }
 
     if (!doctor_id || !day_of_week || !start_time || !end_time || !slot_duration) {
       return res.status(400).json({
@@ -113,6 +129,38 @@ const createSchedule = async (req, res) => {
 const updateSchedule = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const { data: existingSchedule, error: scheduleError } = await supabase
+      .from("schedules")
+      .select("id, doctor_id")
+      .eq("id", id)
+      .single();
+
+    if (scheduleError || !existingSchedule) {
+      return res.status(404).json({
+        message: "Schedule not found",
+      });
+    }
+
+    if (req.user.role === "doctor") {
+      const { data: doctorProfile, error: doctorError } = await supabase
+        .from("doctors")
+        .select("id")
+        .eq("user_id", req.user.id)
+        .single();
+
+      if (doctorError || !doctorProfile) {
+        return res.status(404).json({
+          message: "Doctor profile not found",
+        });
+      }
+
+      if (doctorProfile.id !== existingSchedule.doctor_id) {
+        return res.status(403).json({
+          message: "You can only update your own schedules",
+        });
+      }
+    }
 
     const {
       day_of_week,
@@ -163,6 +211,38 @@ const updateSchedule = async (req, res) => {
 const deleteSchedule = async (req, res) => {
   try {
     const { id } = req.params;
+
+    const { data: existingSchedule, error: scheduleError } = await supabase
+      .from("schedules")
+      .select("id, doctor_id")
+      .eq("id", id)
+      .single();
+
+    if (scheduleError || !existingSchedule) {
+      return res.status(404).json({
+        message: "Schedule not found",
+      });
+    }
+
+    if (req.user.role === "doctor") {
+      const { data: doctorProfile, error: doctorError } = await supabase
+        .from("doctors")
+        .select("id")
+        .eq("user_id", req.user.id)
+        .single();
+
+      if (doctorError || !doctorProfile) {
+        return res.status(404).json({
+          message: "Doctor profile not found",
+        });
+      }
+
+      if (doctorProfile.id !== existingSchedule.doctor_id) {
+        return res.status(403).json({
+          message: "You can only delete your own schedules",
+        });
+      }
+    }
 
     const { error } = await supabase
       .from("schedules")
