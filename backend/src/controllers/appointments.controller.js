@@ -41,22 +41,48 @@ const getAppointmentById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const { data, error } = await supabase
+    const { data: appointment, error } = await supabase
       .from("appointments")
       .select("*")
       .eq("id", id)
       .single();
 
-    if (error) {
+    if (error || !appointment) {
       return res.status(404).json({
         message: "Appointment not found",
-        error: error.message,
+        error: error?.message,
       });
+    }
+
+    if (req.user.role === "patient" && appointment.patient_id !== req.user.id) {
+      return res.status(403).json({
+        message: "You can only access your own appointments",
+      });
+    }
+
+    if (req.user.role === "doctor") {
+      const { data: doctorProfile, error: doctorError } = await supabase
+        .from("doctors")
+        .select("id")
+        .eq("user_id", req.user.id)
+        .single();
+
+      if (doctorError || !doctorProfile) {
+        return res.status(404).json({
+          message: "Doctor profile not found",
+        });
+      }
+
+      if (doctorProfile.id !== appointment.doctor_id) {
+        return res.status(403).json({
+          message: "You can only access your own doctor appointments",
+        });
+      }
     }
 
     return res.status(200).json({
       message: "Appointment fetched successfully",
-      appointment: data,
+      appointment,
     });
   } catch (err) {
     return res.status(500).json({
