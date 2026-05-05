@@ -70,6 +70,26 @@ const getAppointmentsByDoctorId = async (req, res) => {
   try {
     const { doctorId } = req.params;
 
+    if (req.user.role === "doctor") {
+      const { data: doctorProfile, error: doctorError } = await supabase
+        .from("doctors")
+        .select("id")
+        .eq("user_id", req.user.id)
+        .single();
+
+      if (doctorError || !doctorProfile) {
+        return res.status(404).json({
+          message: "Doctor profile not found",
+        });
+      }
+
+      if (doctorProfile.id !== doctorId) {
+        return res.status(403).json({
+          message: "You can only access your own doctor appointments",
+        });
+      }
+    }
+
     const { data, error } = await supabase
       .from("appointments")
       .select("*")
@@ -337,6 +357,38 @@ const updateAppointmentStatus = async (req, res) => {
         message: "Invalid status value",
         allowedStatuses,
       });
+    }
+
+    const { data: appointment, error: appointmentError } = await supabase
+      .from("appointments")
+      .select("id, doctor_id")
+      .eq("id", id)
+      .single();
+
+    if (appointmentError || !appointment) {
+      return res.status(404).json({
+        message: "Appointment not found",
+      });
+    }
+
+    if (req.user.role === "doctor") {
+      const { data: doctorProfile, error: doctorError } = await supabase
+        .from("doctors")
+        .select("id")
+        .eq("user_id", req.user.id)
+        .single();
+
+      if (doctorError || !doctorProfile) {
+        return res.status(404).json({
+          message: "Doctor profile not found",
+        });
+      }
+
+      if (doctorProfile.id !== appointment.doctor_id) {
+        return res.status(403).json({
+          message: "You can only update status for your own doctor appointments",
+        });
+      }
     }
 
     const { data, error } = await supabase
