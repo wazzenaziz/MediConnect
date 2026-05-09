@@ -184,9 +184,103 @@ const createAppointment = async (req, res) => {
 
     const patient_id = req.user.id;
 
-    if (!doctor_id || !start_time || !end_time ) {
+    if (!doctor_id || !start_time || !end_time) {
       return res.status(400).json({
-        message: "doctor_id, start_time, end_time are required",
+        message: "doctor_id, start_time, and end_time are required",
+      });
+    }
+
+    const appointmentStart = new Date(start_time);
+    const appointmentEnd = new Date(end_time);
+    const now = new Date();
+
+    if (isNaN(appointmentStart.getTime()) || isNaN(appointmentEnd.getTime())) {
+      return res.status(400).json({
+        message: "Invalid start_time or end_time format",
+      });
+    }
+
+    if (appointmentStart >= appointmentEnd) {
+      return res.status(400).json({
+        message: "start_time must be before end_time",
+      });
+    }
+
+    if (appointmentStart < now) {
+      return res.status(400).json({
+        message: "Cannot create an appointment in the past",
+      });
+    }
+
+    const { data: doctor, error: doctorError } = await supabase
+      .from("doctors")
+      .select("id")
+      .eq("id", doctor_id)
+      .single();
+
+    if (doctorError || !doctor) {
+      return res.status(404).json({
+        message: "Doctor not found",
+      });
+    }
+
+    const appointmentDate = appointmentStart.toISOString().split("T")[0];
+
+    const dayOfWeek = appointmentStart
+      .toLocaleDateString("en-US", { weekday: "long" })
+      .toLowerCase();
+
+    const { data: schedule, error: scheduleError } = await supabase
+      .from("schedules")
+      .select("*")
+      .eq("doctor_id", doctor_id)
+      .eq("day_of_week", dayOfWeek)
+      .lte("valid_from", appointmentDate)
+      .gte("valid_to", appointmentDate)
+      .maybeSingle();
+
+    if (scheduleError) {
+      return res.status(500).json({
+        message: "Error checking doctor schedule",
+        error: scheduleError.message,
+      });
+    }
+
+    if (!schedule) {
+      return res.status(400).json({
+        message: "Doctor is not available on this date",
+      });
+    }
+
+    const requestedStartTime = appointmentStart.toTimeString().split(" ")[0];
+    const requestedEndTime = appointmentEnd.toTimeString().split(" ")[0];
+
+    if (
+      requestedStartTime < schedule.start_time ||
+      requestedEndTime > schedule.end_time
+    ) {
+      return res.status(400).json({
+        message: "Appointment time is outside the doctor's working hours",
+      });
+    }
+
+    if (
+      schedule.pause_start &&
+      schedule.pause_end &&
+      requestedStartTime < schedule.pause_end &&
+      requestedEndTime > schedule.pause_start
+    ) {
+      return res.status(400).json({
+        message: "Appointment time overlaps with the doctor's pause time",
+      });
+    }
+
+    const durationInMinutes =
+      (appointmentEnd - appointmentStart) / (1000 * 60);
+
+    if (durationInMinutes !== schedule.slot_duration) {
+      return res.status(400).json({
+        message: `Appointment duration must be ${schedule.slot_duration} minutes`,
       });
     }
 
@@ -194,7 +288,8 @@ const createAppointment = async (req, res) => {
       .from("appointments")
       .select("id")
       .eq("doctor_id", doctor_id)
-      .eq("start_time", start_time)
+      .lt("start_time", end_time)
+      .gt("end_time", start_time)
       .neq("status", "cancelled")
       .maybeSingle();
 
@@ -217,7 +312,7 @@ const createAppointment = async (req, res) => {
         {
           doctor_id,
           patient_id,
-          status : "pending",
+          status: "pending",
           start_time,
           end_time,
         },
