@@ -4,7 +4,7 @@ const getAllPatients = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("users")
-      .select("*")
+      .select("id, full_name, email, phone, role, created_at")
       .eq("role", "patient");
 
     if (error) {
@@ -38,7 +38,7 @@ const getPatientById = async (req, res) => {
 
     const { data, error } = await supabase
       .from("users")
-      .select("*")
+      .select("id, full_name, email, phone, role, created_at")
       .eq("id", id)
       .eq("role", "patient")
       .single();
