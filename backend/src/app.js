@@ -8,6 +8,7 @@ const appointmentsRoutes = require("./routes/appointments.routes");
 const authRoutes = require("./routes/auth.routes");
 const userRoutes = require("./routes/users.routes");
 const notesRoutes = require("./routes/notes.routes");
+const adminRoutes = require("./routes/admin.routes");
 
 app.use(express.json());
 
@@ -18,5 +19,6 @@ app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/notes", notesRoutes);
+app.use("/api/admin", adminRoutes);
 
 module.exports = app;
