@@ -1,0 +1,2 @@
+ALTER TABLE schedules
+DROP CONSTRAINT schedules_doctor_id_day_of_week_key;
