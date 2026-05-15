@@ -321,6 +321,12 @@ const createAppointment = async (req, res) => {
       .single();
 
     if (error) {
+      if (error.code === "23P01") {
+        return res.status(409).json({
+          message: "This appointment slot was just booked by another patient. Please choose a different slot.",
+        });
+      }
+
       return res.status(500).json({
         message: "Error creating appointment",
         error: error.message,
