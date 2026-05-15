@@ -7,13 +7,11 @@ const roleMiddleware = require("../middleware/role.middleware");
 const {
         getAllPatients,
         getPatientById,
-        createPatient,
         updatePatient,
         deletePatient
 } = require("../controllers/users.controller");
 
 router.get("/", authMiddleware, roleMiddleware("admin"), getAllPatients);
-router.post("/", authMiddleware, roleMiddleware("admin"), createPatient);
 router.get("/:id", authMiddleware, roleMiddleware("admin", "patient"), getPatientById);
 router.patch("/:id", authMiddleware, roleMiddleware("admin", "patient"), updatePatient);
 router.delete("/:id", authMiddleware, roleMiddleware("admin"), deletePatient);
