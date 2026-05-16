@@ -1,5 +1,7 @@
 const supabase = require("../config/supabase");
 
+const TIMEZONE = "Africa/Tunis";
+
 const timeToMinutes = (time) => {
   const [hours, minutes] = time.split(":").map(Number);
   return hours * 60 + minutes;
@@ -224,10 +226,10 @@ const createAppointment = async (req, res) => {
       });
     }
 
-    const appointmentDate = appointmentStart.toISOString().split("T")[0];
+    const appointmentDate = appointmentStart.toLocaleDateString("en-CA", { timeZone: TIMEZONE });
 
     const dayOfWeek = appointmentStart
-      .toLocaleDateString("en-US", { weekday: "long" })
+      .toLocaleDateString("en-US", { timeZone: TIMEZONE, weekday: "long" })
       .toLowerCase();
 
     const { data: schedule, error: scheduleError } = await supabase
@@ -357,7 +359,7 @@ const getAvailableSlots = async (req, res) => {
     }
 
     const dayOfWeek = new Date(date).toLocaleDateString("en-US", {
-      weekday: "long",
+      weekday: "long", timeZone: TIMEZONE,
     }).toLowerCase();
 
     const { data: schedule, error: scheduleError } = await supabase
