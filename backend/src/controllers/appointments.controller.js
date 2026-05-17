@@ -1,5 +1,7 @@
 const supabase = require("../config/supabase");
 
+const { getLoggedInDoctorProfile, authorizeAppointmentAccess } = require("../utils/auth-helpers");
+
 const TIMEZONE = "Africa/Tunis";
 
 const timeToMinutes = (time) => {
@@ -56,30 +58,10 @@ const getAppointmentById = async (req, res) => {
       });
     }
 
-    if (req.user.role === "patient" && appointment.patient_id !== req.user.id) {
-      return res.status(403).json({
-        message: "You can only access your own appointments",
-      });
-    }
+    const auth = await authorizeAppointmentAccess(req, appointment);
 
-    if (req.user.role === "doctor") {
-      const { data: doctorProfile, error: doctorError } = await supabase
-        .from("doctors")
-        .select("id")
-        .eq("user_id", req.user.id)
-        .single();
-
-      if (doctorError || !doctorProfile) {
-        return res.status(404).json({
-          message: "Doctor profile not found",
-        });
-      }
-
-      if (doctorProfile.id !== appointment.doctor_id) {
-        return res.status(403).json({
-          message: "You can only access your own doctor appointments",
-        });
-      }
+    if (!auth.allowed) {
+      return res.status(auth.status).json({ message: auth.message });
     }
 
     return res.status(200).json({
@@ -99,13 +81,9 @@ const getAppointmentsByDoctorId = async (req, res) => {
     const { doctorId } = req.params;
 
     if (req.user.role === "doctor") {
-      const { data: doctorProfile, error: doctorError } = await supabase
-        .from("doctors")
-        .select("id")
-        .eq("user_id", req.user.id)
-        .single();
+      const doctorProfile = await getLoggedInDoctorProfile(req.user.id);
 
-      if (doctorError || !doctorProfile) {
+      if (!doctorProfile) {
         return res.status(404).json({
           message: "Doctor profile not found",
         });
@@ -500,24 +478,10 @@ const updateAppointmentStatus = async (req, res) => {
       });
     }
 
-    if (req.user.role === "doctor") {
-      const { data: doctorProfile, error: doctorError } = await supabase
-        .from("doctors")
-        .select("id")
-        .eq("user_id", req.user.id)
-        .single();
+    const auth = await authorizeAppointmentAccess(req, appointment);
 
-      if (doctorError || !doctorProfile) {
-        return res.status(404).json({
-          message: "Doctor profile not found",
-        });
-      }
-
-      if (doctorProfile.id !== appointment.doctor_id) {
-        return res.status(403).json({
-          message: "You can only update status for your own doctor appointments",
-        });
-      }
+    if (!auth.allowed) {
+      return res.status(auth.status).json({ message: auth.message });
     }
 
     const { data, error } = await supabase

@@ -1,5 +1,7 @@
 const supabase = require("../config/supabase");
 
+const { getLoggedInDoctorProfile } = require("../utils/auth-helpers");
+
 const isValidTime = (time) => {
   if (!time) return true;
 
@@ -153,13 +155,9 @@ const createSchedule = async (req, res) => {
     } = req.body;
 
     if (req.user.role === "doctor") {
-      const { data: doctorProfile, error: doctorError } = await supabase
-        .from("doctors")
-        .select("id")
-        .eq("user_id", req.user.id)
-        .single();
+      const doctorProfile = await getLoggedInDoctorProfile(req.user.id);
 
-      if (doctorError || !doctorProfile) {
+      if (!doctorProfile) {
         return res.status(404).json({
           message: "Doctor profile not found",
         });
@@ -244,13 +242,9 @@ const updateSchedule = async (req, res) => {
     }
 
     if (req.user.role === "doctor") {
-      const { data: doctorProfile, error: doctorError } = await supabase
-        .from("doctors")
-        .select("id")
-        .eq("user_id", req.user.id)
-        .single();
+      const doctorProfile = await getLoggedInDoctorProfile(req.user.id);
 
-      if (doctorError || !doctorProfile) {
+      if (!doctorProfile) {
         return res.status(404).json({
           message: "Doctor profile not found",
         });
@@ -342,13 +336,9 @@ const deleteSchedule = async (req, res) => {
     }
 
     if (req.user.role === "doctor") {
-      const { data: doctorProfile, error: doctorError } = await supabase
-        .from("doctors")
-        .select("id")
-        .eq("user_id", req.user.id)
-        .single();
+      const doctorProfile = await getLoggedInDoctorProfile(req.user.id);
 
-      if (doctorError || !doctorProfile) {
+      if (!doctorProfile) {
         return res.status(404).json({
           message: "Doctor profile not found",
         });

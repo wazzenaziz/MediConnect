@@ -1,54 +1,6 @@
 const supabase = require("../config/supabase");
 
-/**
- * Helper function:
- * Get the doctor profile connected to the logged-in user.
- * req.user.id = users.id
- * doctors.user_id = users.id
- */
-const getLoggedInDoctorProfile = async (userId) => {
-  const { data: doctorProfile, error } = await supabase
-    .from("doctors")
-    .select("id")
-    .eq("user_id", userId)
-    .single();
-
-  if (error || !doctorProfile) {
-    return null;
-  }
-
-  return doctorProfile;
-};
-
-/**
- * Helper function:
- * Check if the logged-in user can access this appointment.
- *
- * admin   → can access any appointment
- * doctor  → can access only appointments linked to their doctor profile
- * patient → can access only their own appointments
- */
-const canAccessAppointment = async (req, appointment) => {
-  if (req.user.role === "admin") {
-    return true;
-  }
-
-  if (req.user.role === "patient") {
-    return appointment.patient_id === req.user.id;
-  }
-
-  if (req.user.role === "doctor") {
-    const doctorProfile = await getLoggedInDoctorProfile(req.user.id);
-
-    if (!doctorProfile) {
-      return false;
-    }
-
-    return appointment.doctor_id === doctorProfile.id;
-  }
-
-  return false;
-};
+const { getLoggedInDoctorProfile, authorizeAppointmentAccess } = require("../utils/auth-helpers");
 
 /**
  * POST /api/notes
@@ -90,12 +42,10 @@ const createNote = async (req, res) => {
       });
     }
 
-    const allowed = await canAccessAppointment(req, appointment);
+    const auth = await authorizeAppointmentAccess(req, appointment);
 
-    if (!allowed) {
-      return res.status(403).json({
-        message: "You can only create notes for your own appointments",
-      });
+    if (!auth.allowed) {
+      return res.status(auth.status).json({ message: auth.message });
     }
 
     const { data, error } = await supabase
@@ -166,12 +116,10 @@ const getNoteById = async (req, res) => {
       });
     }
 
-    const allowed = await canAccessAppointment(req, appointment);
+    const auth = await authorizeAppointmentAccess(req, appointment);
 
-    if (!allowed) {
-      return res.status(403).json({
-        message: "You can only view notes related to your own appointments",
-      });
+    if (!auth.allowed) {
+      return res.status(auth.status).json({ message: auth.message });
     }
 
     return res.status(200).json({
@@ -207,12 +155,10 @@ const getNotesByAppointmentId = async (req, res) => {
       });
     }
 
-    const allowed = await canAccessAppointment(req, appointment);
+    const auth = await authorizeAppointmentAccess(req, appointment);
 
-    if (!allowed) {
-      return res.status(403).json({
-        message: "You can only view notes related to your own appointments",
-      });
+    if (!auth.allowed) {
+      return res.status(auth.status).json({ message: auth.message });
     }
 
     const { data, error } = await supabase
@@ -341,12 +287,10 @@ const updateNote = async (req, res) => {
       });
     }
 
-    const allowed = await canAccessAppointment(req, appointment);
+    const auth = await authorizeAppointmentAccess(req, appointment);
 
-    if (!allowed) {
-      return res.status(403).json({
-        message: "You can only update notes related to your own appointments",
-      });
+    if (!auth.allowed) {
+      return res.status(auth.status).json({ message: auth.message });
     }
 
     const { data, error } = await supabase
@@ -422,12 +366,10 @@ const deleteNote = async (req, res) => {
       });
     }
 
-    const allowed = await canAccessAppointment(req, appointment);
+    const auth = await authorizeAppointmentAccess(req, appointment);
 
-    if (!allowed) {
-      return res.status(403).json({
-        message: "You can only delete notes related to your own appointments",
-      });
+    if (!auth.allowed) {
+      return res.status(auth.status).json({ message: auth.message });
     }
 
     const { error } = await supabase
