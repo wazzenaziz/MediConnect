@@ -204,6 +204,11 @@ const deleteDoctor = async (req, res) => {
       .eq("id", id);
 
     if (error) {
+      if (error.code === "23503") {
+        return res.status(409).json({
+          message: "Cannot delete this doctor because they have existing appointments or medical records",
+        });
+      }
       return res.status(400).json({
         message: "Error deleting doctor",
         error: error.message,
