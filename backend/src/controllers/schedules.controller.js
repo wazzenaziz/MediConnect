@@ -2,91 +2,6 @@ const supabase = require("../config/supabase");
 
 const { getLoggedInDoctorProfile } = require("../utils/auth-helpers");
 
-const isValidTime = (time) => {
-  if (!time) return true;
-
-  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)(:[0-5]\d)?$/;
-  return timeRegex.test(time);
-};
-
-const timeToMinutes = (time) => {
-  const [hours, minutes] = time.split(":").map(Number);
-  return hours * 60 + minutes;
-};
-
-const validateScheduleTimes = ({
-  start_time,
-  end_time,
-  pause_start,
-  pause_end,
-  slot_duration,
-  valid_from,
-  valid_to,
-}) => {
-  if (!isValidTime(start_time) || !isValidTime(end_time)) {
-    return "start_time and end_time must be valid time values";
-  }
-
-  if (pause_start && !isValidTime(pause_start)) {
-    return "pause_start must be a valid time value";
-  }
-
-  if (pause_end && !isValidTime(pause_end)) {
-    return "pause_end must be a valid time value";
-  }
-
-  if (start_time && end_time) {
-    const startMinutes = timeToMinutes(start_time);
-    const endMinutes = timeToMinutes(end_time);
-
-    if (startMinutes >= endMinutes) {
-      return "start_time must be before end_time";
-    }
-
-    if (slot_duration && Number(slot_duration) <= 0) {
-      return "slot_duration must be greater than 0";
-    }
-
-    if (slot_duration && Number(slot_duration) > endMinutes - startMinutes) {
-      return "slot_duration cannot be longer than the working period";
-    }
-  }
-
-  if ((pause_start && !pause_end) || (!pause_start && pause_end)) {
-    return "pause_start and pause_end must be provided together";
-  }
-
-  if (pause_start && pause_end && start_time && end_time) {
-    const startMinutes = timeToMinutes(start_time);
-    const endMinutes = timeToMinutes(end_time);
-    const pauseStartMinutes = timeToMinutes(pause_start);
-    const pauseEndMinutes = timeToMinutes(pause_end);
-
-    if (pauseStartMinutes >= pauseEndMinutes) {
-      return "pause_start must be before pause_end";
-    }
-
-    if (pauseStartMinutes < startMinutes || pauseEndMinutes > endMinutes) {
-      return "Pause time must be inside working hours";
-    }
-  }
-
-  if (valid_from && valid_to) {
-    const validFromDate = new Date(valid_from);
-    const validToDate = new Date(valid_to);
-
-    if (isNaN(validFromDate.getTime()) || isNaN(validToDate.getTime())) {
-      return "valid_from and valid_to must be valid dates";
-    }
-
-    if (validFromDate > validToDate) {
-      return "valid_from must be before or equal to valid_to";
-    }
-  }
-
-  return null;
-};
-
 const getAllSchedules = async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -172,22 +87,6 @@ const createSchedule = async (req, res) => {
       });
     }
 
-    const validationError = validateScheduleTimes({
-      start_time,
-      end_time,
-      pause_start,
-      pause_end,
-      slot_duration,
-      valid_from,
-      valid_to,
-    });
-
-    if (validationError) {
-      return res.status(400).json({
-        message: validationError,
-      });
-    }
-
     const { data, error } = await supabase
       .from("schedules")
       .insert([
@@ -267,22 +166,6 @@ const updateSchedule = async (req, res) => {
       valid_from,
       valid_to,
     } = req.body;
-
-    const validationError = validateScheduleTimes({
-      start_time,
-      end_time,
-      pause_start,
-      pause_end,
-      slot_duration,
-      valid_from,
-      valid_to,
-    });
-
-    if (validationError) {
-      return res.status(400).json({
-        message: validationError,
-      });
-    }
 
     const { data, error } = await supabase
       .from("schedules")

@@ -15,7 +15,8 @@ const {
   deleteNote,
 } = require("../controllers/notes.controller");
 
-router.post("/", authMiddleware, roleMiddleware("doctor", "admin"), validate(createNoteSchema), createNote);router.get("/appointment/:appointmentId", authMiddleware, getNotesByAppointmentId);
+router.post("/", authMiddleware, roleMiddleware("doctor", "admin"), validate(createNoteSchema), createNote);
+router.get("/appointment/:appointmentId", authMiddleware, roleMiddleware("patient", "doctor", "admin"), getNotesByAppointmentId);
 router.get("/patient/:patientId", authMiddleware, roleMiddleware("patient", "doctor", "admin"), getNotesByPatientId);
 router.get("/:id", authMiddleware, getNoteById);
 router.patch("/:id", authMiddleware, roleMiddleware("doctor", "admin"), validate(updateNoteSchema), updateNote);

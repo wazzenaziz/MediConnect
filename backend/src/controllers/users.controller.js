@@ -74,7 +74,6 @@ const updatePatient = async (req, res) => {
 
     const {
       full_name,
-      email,
       phone,
     } = req.body;
 
@@ -82,7 +81,6 @@ const updatePatient = async (req, res) => {
       .from("users")
       .update({
         full_name,
-        email,
         phone,
       })
       .eq("id", id)

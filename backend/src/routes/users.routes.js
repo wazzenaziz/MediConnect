@@ -15,7 +15,7 @@ const {
 
 router.get("/", authMiddleware, roleMiddleware("admin"), getAllPatients);
 router.get("/:id", authMiddleware, roleMiddleware("admin", "patient"), getPatientById);
-router.patch("/:id", authMiddleware, roleMiddleware("admin", "patient"), updatePatient);
 router.patch("/:id", authMiddleware, roleMiddleware("admin", "patient"), validate(updatePatientSchema), updatePatient);
+router.delete("/:id", authMiddleware, roleMiddleware("admin"), deletePatient);
 
 module.exports = router;

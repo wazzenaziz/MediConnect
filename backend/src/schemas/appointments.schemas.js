@@ -21,11 +21,6 @@ const createAppointmentSchema = z
     end_time: z
       .string()
       .datetime({ message: "end_time must be ISO 8601 (e.g. 2026-06-01T10:30:00Z)" }),
-    reason: z
-      .string()
-      .max(500, "Reason cannot exceed 500 characters")
-      .trim()
-      .optional(),
   })
   .refine(
     (data) => new Date(data.end_time) > new Date(data.start_time),
