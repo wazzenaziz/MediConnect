@@ -18,6 +18,7 @@ const appointmentsRoutes = require("./routes/appointments.routes");
 const authRoutes = require("./routes/auth.routes");
 const notesRoutes = require("./routes/notes.routes");
 const adminRoutes = require("./routes/admin.routes");
+const triageRoutes = require("./routes/triage.routes");
 
 // === Global middleware ===
 app.use(helmet());
@@ -46,6 +47,7 @@ app.use("/api/schedules", schedulesRoutes);
 app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/notes", notesRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/triage", triageRoutes);
 
 // === 404 + error handlers ===
 app.use((req, res) => {

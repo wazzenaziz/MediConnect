@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import PatientHome from './patient/PatientHome'
 import Placeholder from './patient/Placeholder'
+import Triage from './patient/Triage'
 
 const navItems = [
   { to: '/patient', label: 'Home', icon: '🏠', end: true },
@@ -18,15 +19,7 @@ export default function PatientDashboard() {
         element={<DashboardLayout accent="sky" roleLabel="Patient" navItems={navItems} />}
       >
         <Route index element={<PatientHome />} />
-        <Route
-          path="triage"
-          element={
-            <Placeholder
-              title="Symptom triage"
-              description="The AI chatbot will live here in the next commit."
-            />
-          }
-        />
+        <Route path="triage" element={<Triage />} />
         <Route
           path="doctors"
           element={
