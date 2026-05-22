@@ -226,9 +226,41 @@ const deleteDoctor = async (req, res) => {
   }
 };
 
+const getNearbyDoctors = async (req, res) => {
+  try {
+    const { lat, lng, radius_km, specialty } = req.validatedQuery;
+
+    const { data, error } = await supabase.rpc("nearby_doctors", {
+      lat,
+      lng,
+      radius_km,
+      specialty_filter: specialty || null,
+    });
+
+    if (error) {
+      return res.status(500).json({
+        message: "Error fetching nearby doctors",
+        error: error.message,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Nearby doctors fetched successfully",
+      count: data?.length || 0,
+      doctors: data || [],
+    });
+  } catch (err) {
+    return res.status(500).json({
+      message: "Server error",
+      error: err.message,
+    });
+  }
+};
+
 module.exports = {
     getAllDoctors,
     getDoctorById,
+    getNearbyDoctors,
     createDoctor,
     updateDoctor,
     deleteDoctor

@@ -80,4 +80,30 @@ const validate = (schema) => {
   };
 };
 
-module.exports = { validate };
+/**
+ * Same as `validate`, but reads from `req.query` instead of `req.body`.
+ * Express 5 makes `req.query` non-writable, so we don't overwrite it —
+ * the parsed (coerced, defaulted) values are stashed on `req.validatedQuery`
+ * for the controller to consume.
+ */
+const validateQuery = (schema) => {
+  return (req, res, next) => {
+    const result = schema.safeParse(req.query);
+
+    if (!result.success) {
+      const errors = result.error.issues.map((issue) => ({
+        field: issue.path.join("."),
+        message: issue.message,
+      }));
+      return res.status(400).json({
+        message: "Validation failed",
+        errors,
+      });
+    }
+
+    req.validatedQuery = result.data;
+    next();
+  };
+};
+
+module.exports = { validate, validateQuery };

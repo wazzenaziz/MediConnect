@@ -3,6 +3,7 @@ import DashboardLayout from '../components/DashboardLayout'
 import PatientHome from './patient/PatientHome'
 import Placeholder from './patient/Placeholder'
 import Triage from './patient/Triage'
+import Doctors from './patient/Doctors'
 
 const navItems = [
   { to: '/patient', label: 'Home', icon: '🏠', end: true },
@@ -20,15 +21,7 @@ export default function PatientDashboard() {
       >
         <Route index element={<PatientHome />} />
         <Route path="triage" element={<Triage />} />
-        <Route
-          path="doctors"
-          element={
-            <Placeholder
-              title="Find a doctor"
-              description="Map + nearby search coming soon."
-            />
-          }
-        />
+        <Route path="doctors" element={<Doctors />} />
         <Route
           path="appointments"
           element={
