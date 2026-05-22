@@ -1,30 +1,61 @@
-import { useAuth } from '../context/AuthContext'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import DashboardLayout from '../components/DashboardLayout'
+import PatientHome from './patient/PatientHome'
+import Placeholder from './patient/Placeholder'
+
+const navItems = [
+  { to: '/patient', label: 'Home', icon: '🏠', end: true },
+  { to: '/patient/triage', label: 'Triage', icon: '🩺' },
+  { to: '/patient/doctors', label: 'Find doctors', icon: '📍' },
+  { to: '/patient/appointments', label: 'Appointments', icon: '📅' },
+  { to: '/patient/profile', label: 'Profile', icon: '👤' },
+]
 
 export default function PatientDashboard() {
-  const { user, logout } = useAuth()
   return (
-    <div className="min-h-screen p-8">
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">
-            Patient
-          </p>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Welcome{user?.full_name ? `, ${user.full_name}` : ''}
-          </h1>
-        </div>
-        <button
-          onClick={logout}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          Log out
-        </button>
-      </header>
-      <section className="rounded-2xl bg-white p-6 shadow-sm">
-        <p className="text-slate-600">
-          Triage chatbot, doctor search, and booking come in upcoming commits.
-        </p>
-      </section>
-    </div>
+    <Routes>
+      <Route
+        element={<DashboardLayout accent="sky" roleLabel="Patient" navItems={navItems} />}
+      >
+        <Route index element={<PatientHome />} />
+        <Route
+          path="triage"
+          element={
+            <Placeholder
+              title="Symptom triage"
+              description="The AI chatbot will live here in the next commit."
+            />
+          }
+        />
+        <Route
+          path="doctors"
+          element={
+            <Placeholder
+              title="Find a doctor"
+              description="Map + nearby search coming soon."
+            />
+          }
+        />
+        <Route
+          path="appointments"
+          element={
+            <Placeholder
+              title="My appointments"
+              description="Upcoming and past visits will appear here."
+            />
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <Placeholder
+              title="Profile"
+              description="Account settings will appear here."
+            />
+          }
+        />
+        <Route path="*" element={<Navigate to="/patient" replace />} />
+      </Route>
+    </Routes>
   )
 }

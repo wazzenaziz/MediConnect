@@ -27,17 +27,8 @@ export default function Login() {
     setSubmitting(true)
     try {
       const { data } = await api.post('/auth/login', { email, password })
-      const profile = {
-        id: data.user?.id,
-        email: data.user?.email,
-        full_name:
-          data.user?.user_metadata?.full_name ||
-          data.user?.email?.split('@')[0] ||
-          '',
-        role: data.user?.user_metadata?.role || data.user?.role || 'patient',
-      }
-      login(profile, data.access_token)
-      navigate(from || dashboardPath(profile.role), { replace: true })
+      login(data.user, data.access_token)
+      navigate(from || dashboardPath(data.user.role), { replace: true })
     } catch (err) {
       const status = err.response?.status
       if (status === 429) {

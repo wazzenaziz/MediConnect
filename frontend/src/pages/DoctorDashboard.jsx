@@ -1,31 +1,96 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
+import DashboardLayout from '../components/DashboardLayout'
+import Placeholder from './patient/Placeholder'
 import { useAuth } from '../context/AuthContext'
 
-export default function DoctorDashboard() {
-  const { user, logout } = useAuth()
+function DoctorHome() {
+  const { user } = useAuth()
+  const firstName = user?.full_name?.split(' ')[0]
   return (
-    <div className="min-h-screen p-8">
-      <header className="mb-8 flex items-center justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
-            Doctor
-          </p>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Welcome{user?.full_name ? `, Dr. ${user.full_name}` : ''}
-          </h1>
-        </div>
-        <button
-          onClick={logout}
-          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-        >
-          Log out
-        </button>
-      </header>
-      <section className="rounded-2xl bg-white p-6 shadow-sm">
-        <p className="text-slate-600">
-          Schedule management, appointments, and consultation notes come in upcoming
-          commits.
+    <div className="space-y-8">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+          Dashboard
         </p>
-      </section>
+        <h1 className="mt-1 text-3xl font-bold text-slate-900">
+          Welcome{firstName ? `, Dr. ${firstName}` : ''}
+        </h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Manage your schedule, see upcoming appointments, and write consultation notes.
+        </p>
+      </div>
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+        <p className="text-sm text-slate-500">
+          Today’s appointments overview will appear here in an upcoming commit.
+        </p>
+      </div>
     </div>
+  )
+}
+
+const navItems = [
+  { to: '/doctor', label: 'Home', icon: '🏠', end: true },
+  { to: '/doctor/schedule', label: 'Schedule', icon: '📅' },
+  { to: '/doctor/appointments', label: 'Appointments', icon: '👥' },
+  { to: '/doctor/notes', label: 'Consultation notes', icon: '📝' },
+  { to: '/doctor/profile', label: 'Profile', icon: '👤' },
+]
+
+export default function DoctorDashboard() {
+  return (
+    <Routes>
+      <Route
+        element={
+          <DashboardLayout accent="emerald" roleLabel="Doctor" navItems={navItems} />
+        }
+      >
+        <Route index element={<DoctorHome />} />
+        <Route
+          path="schedule"
+          element={
+            <Placeholder
+              eyebrow="Doctor"
+              accent="emerald"
+              title="Schedule"
+              description="Manage your availability and time slots."
+            />
+          }
+        />
+        <Route
+          path="appointments"
+          element={
+            <Placeholder
+              eyebrow="Doctor"
+              accent="emerald"
+              title="Appointments"
+              description="Confirm, cancel, or review patient appointments."
+            />
+          }
+        />
+        <Route
+          path="notes"
+          element={
+            <Placeholder
+              eyebrow="Doctor"
+              accent="emerald"
+              title="Consultation notes"
+              description="Write structured notes (diagnosis, prescription, follow-up) per patient."
+            />
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <Placeholder
+              eyebrow="Doctor"
+              accent="emerald"
+              title="Profile"
+              description="Account and clinic information."
+            />
+          }
+        />
+        <Route path="*" element={<Navigate to="/doctor" replace />} />
+      </Route>
+    </Routes>
   )
 }
