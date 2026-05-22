@@ -1,6 +1,18 @@
 const supabase = require("../config/supabase");
+const { emitTo } = require("../config/io");
 
 const { getLoggedInDoctorProfile, authorizeAppointmentAccess } = require("../utils/auth-helpers");
+
+// Resolve the doctor's auth user_id from a doctor row id so we can target
+// their personal socket room (user:<userId>). Returns null if not found.
+const doctorUserIdFor = async (doctorId) => {
+  const { data } = await supabase
+    .from("doctors")
+    .select("user_id")
+    .eq("id", doctorId)
+    .maybeSingle();
+  return data?.user_id || null;
+};
 
 const TIMEZONE = "Africa/Tunis";
 
@@ -319,6 +331,25 @@ const createAppointment = async (req, res) => {
       });
     }
 
+    // Fire-and-forget realtime fan-out. We do NOT await; if the socket
+    // layer is degraded, the patient still gets their 201 in time.
+    (async () => {
+      const doctorUserId = await doctorUserIdFor(doctor_id);
+      const payload = {
+        appointment: data,
+        patient: { id: req.user.id, full_name: req.user.full_name },
+      };
+      if (doctorUserId) emitTo(`user:${doctorUserId}`, "appointment:created", payload);
+      emitTo(`user:${patient_id}`, "appointment:created", payload);
+      // Slot picker refresh fan-out — every client viewing this doctor.
+      emitTo(`doctor:${doctor_id}`, "doctor:slot-changed", {
+        doctor_id,
+        start_time: data.start_time,
+        end_time: data.end_time,
+        reason: "booked",
+      });
+    })().catch((e) => console.error("[socket] create fan-out:", e.message));
+
     return res.status(201).json({
       message: "Appointment created successfully",
       appointment: data,
@@ -545,7 +576,7 @@ const cancelAppointment = async (req, res) => {
 
     const { data: appointment, error: fetchError } = await supabase
       .from("appointments")
-      .select("id, patient_id")
+      .select("id, patient_id, doctor_id")
       .eq("id", id)
       .single();
 
@@ -574,6 +605,26 @@ const cancelAppointment = async (req, res) => {
         error: error.message,
       });
     }
+
+    // Realtime fan-out. Tell the doctor + the patient (in case they
+    // cancelled in one tab and have /patient/appointments open in
+    // another), and broadcast a slot-changed event so any open slot
+    // pickers refresh and show the now-free time.
+    (async () => {
+      const doctorUserId = await doctorUserIdFor(data.doctor_id);
+      const payload = {
+        appointment: data,
+        cancelled_by: req.user.role,
+      };
+      if (doctorUserId) emitTo(`user:${doctorUserId}`, "appointment:cancelled", payload);
+      emitTo(`user:${data.patient_id}`, "appointment:cancelled", payload);
+      emitTo(`doctor:${data.doctor_id}`, "doctor:slot-changed", {
+        doctor_id: data.doctor_id,
+        start_time: data.start_time,
+        end_time: data.end_time,
+        reason: "cancelled",
+      });
+    })().catch((e) => console.error("[socket] cancel fan-out:", e.message));
 
     return res.status(200).json({
       message: "Appointment cancelled successfully",

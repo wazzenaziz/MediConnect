@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../../lib/api'
+import { useSocket } from '../../context/SocketContext'
 
 const TZ = 'Africa/Tunis'
 
@@ -107,23 +108,29 @@ export default function DoctorProfile() {
     }
   }, [id])
 
-  useEffect(() => {
-    let cancelled = false
-    setSlotsLoading(true)
-    setSlotsError(null)
-    setBookingSuccess(null)
-    // Clear any lingering booking error so it doesn't follow the user
-    // when they switch to a different date.
-    setBookingError(null)
-    api
-      .get(`/appointments/available-slots/${id}`, {
-        params: { date: selectedDate },
-      })
-      .then(({ data }) => {
-        if (!cancelled) setSlots(data.availableSlots || [])
-      })
-      .catch((err) => {
-        if (!cancelled) {
+  // Pull the slot fetch out into a callable so the realtime hook below
+  // can re-run it when a doctor:slot-changed event arrives. We track an
+  // `abortRef` so an in-flight request can be ignored if a newer fetch
+  // is started before it resolves (date change or fast event sequence).
+  const fetchSlots = useCallback(
+    ({ silent = false } = {}) => {
+      if (!silent) {
+        setSlotsLoading(true)
+        setSlotsError(null)
+        setBookingSuccess(null)
+        setBookingError(null)
+      }
+      let cancelled = false
+      const promise = api
+        .get(`/appointments/available-slots/${id}`, {
+          params: { date: selectedDate },
+        })
+        .then(({ data }) => {
+          if (!cancelled) setSlots(data.availableSlots || [])
+        })
+        .catch((err) => {
+          if (cancelled) return
+          if (silent) return // soft refresh; don't show an error banner
           const apiMsg = err.response?.data?.message
           const apiErr = err.response?.data?.error
           const detail = apiErr ? `${apiMsg} (${apiErr})` : apiMsg
@@ -131,15 +138,45 @@ export default function DoctorProfile() {
             detail || 'Could not load available slots for this day.',
           )
           setSlots([])
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setSlotsLoading(false)
-      })
-    return () => {
-      cancelled = true
+        })
+        .finally(() => {
+          if (!cancelled && !silent) setSlotsLoading(false)
+        })
+      promise.cancel = () => {
+        cancelled = true
+      }
+      return promise
+    },
+    [id, selectedDate],
+  )
+
+  useEffect(() => {
+    const req = fetchSlots()
+    return () => req.cancel?.()
+  }, [fetchSlots])
+
+  // Realtime: subscribe to this doctor's slot-change room while on the
+  // page, and silently re-fetch whenever someone (else) books or cancels
+  // a slot that falls on the day we're currently showing.
+  const socket = useSocket()
+  useEffect(() => {
+    if (!socket || !id) return
+    socket.emit('doctor:subscribe', id)
+
+    function onSlotChanged(payload) {
+      if (!payload || payload.doctor_id !== id) return
+      // Only re-fetch if the change affects the day we're viewing.
+      const changedDate = (payload.start_time || '').slice(0, 10)
+      if (changedDate && changedDate !== selectedDate) return
+      fetchSlots({ silent: true })
     }
-  }, [id, selectedDate])
+
+    socket.on('doctor:slot-changed', onSlotChanged)
+    return () => {
+      socket.off('doctor:slot-changed', onSlotChanged)
+      socket.emit('doctor:unsubscribe', id)
+    }
+  }, [socket, id, selectedDate, fetchSlots])
 
   async function handleBook(slot) {
     setBookingSlot(slot.start_time)

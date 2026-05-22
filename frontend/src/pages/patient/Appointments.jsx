@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
+import { useSocket } from '../../context/SocketContext'
 
 const TZ = 'Africa/Tunis'
 
@@ -88,6 +89,22 @@ export default function Appointments() {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
+
+  // Realtime: if an appointment event fires for this user from another
+  // tab or the other party (e.g. doctor cancels), re-fetch the list so
+  // status/membership reflect reality without a manual refresh.
+  const socket = useSocket()
+  useEffect(() => {
+    if (!socket) return
+    const refresh = () => load()
+    socket.on('appointment:created', refresh)
+    socket.on('appointment:cancelled', refresh)
+    return () => {
+      socket.off('appointment:created', refresh)
+      socket.off('appointment:cancelled', refresh)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, user?.id])
 
   async function handleCancel(appt) {
     if (
