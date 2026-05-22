@@ -4,6 +4,8 @@ import PatientHome from './patient/PatientHome'
 import Placeholder from './patient/Placeholder'
 import Triage from './patient/Triage'
 import Doctors from './patient/Doctors'
+import DoctorProfile from './patient/DoctorProfile'
+import Appointments from './patient/Appointments'
 
 const navItems = [
   { to: '/patient', label: 'Home', icon: '🏠', end: true },
@@ -22,15 +24,8 @@ export default function PatientDashboard() {
         <Route index element={<PatientHome />} />
         <Route path="triage" element={<Triage />} />
         <Route path="doctors" element={<Doctors />} />
-        <Route
-          path="appointments"
-          element={
-            <Placeholder
-              title="My appointments"
-              description="Upcoming and past visits will appear here."
-            />
-          }
-        />
+        <Route path="doctors/:id" element={<DoctorProfile />} />
+        <Route path="appointments" element={<Appointments />} />
         <Route
           path="profile"
           element={

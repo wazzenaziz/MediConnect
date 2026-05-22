@@ -301,7 +301,13 @@ const createAppointment = async (req, res) => {
       .single();
 
     if (error) {
-      if (error.code === "23P01") {
+      // 23P01: exclusion_violation (the EXCLUDE constraint on tsrange
+      //        overlap — the real concurrency safeguard, ignores
+      //        cancelled rows).
+      // 23505: unique_violation (defensive — migration 013 dropped the
+      //        obsolete UNIQUE, but if one is ever reintroduced this
+      //        surfaces it cleanly as a 409 instead of a generic 500).
+      if (error.code === "23P01" || error.code === "23505") {
         return res.status(409).json({
           message: "This appointment slot was just booked by another patient. Please choose a different slot.",
         });
@@ -417,15 +423,38 @@ const getAvailableSlots = async (req, res) => {
       });
     }
 
+    // Compare in Tunis wall-clock time on both sides.
+    //
+    // Slot strings were built as `${date}T${HH:MM:00}` from the schedule
+    // — they already represent Tunis wall-clock minutes.
+    //
+    // Booked appointments come from a timezone-naive TIMESTAMP column
+    // that stores UTC. We render them in Tunis (the doctor's clinic tz)
+    // by formatting the JS Date in `Africa/Tunis`. This avoids fragile
+    // Date math (no Z-appending hacks, no server-tz assumptions) and
+    // matches how the rest of the app interprets these timestamps.
+    const toTunisMinutes = (utcLike) => {
+      const d = new Date(/Z$|[+-]\d{2}:?\d{2}$/.test(utcLike) ? utcLike : utcLike + "Z");
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: TIMEZONE,
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).formatToParts(d);
+      const hh = Number(parts.find((p) => p.type === "hour").value);
+      const mm = Number(parts.find((p) => p.type === "minute").value);
+      return hh * 60 + mm;
+    };
+
     const finalAvailableSlots = availableSlots.filter((slot) => {
-      const slotStart = new Date(slot.start_time);
-      const slotEnd = new Date(slot.end_time);
+      // Slot strings are local wall-clock — pull HH:MM straight out.
+      const slotStartMin = timeToMinutes(slot.start_time.split("T")[1]);
+      const slotEndMin = timeToMinutes(slot.end_time.split("T")[1]);
 
       const isBooked = bookedAppointments.some((appointment) => {
-        const appointmentStart = new Date(appointment.start_time);
-        const appointmentEnd = new Date(appointment.end_time);
-
-        return slotStart < appointmentEnd && slotEnd > appointmentStart;
+        const apptStartMin = toTunisMinutes(appointment.start_time);
+        const apptEndMin = toTunisMinutes(appointment.end_time);
+        return slotStartMin < apptEndMin && slotEndMin > apptStartMin;
       });
 
       return !isBooked;
