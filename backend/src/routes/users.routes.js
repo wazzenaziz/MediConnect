@@ -14,7 +14,9 @@ const {
 } = require("../controllers/users.controller");
 
 router.get("/", authMiddleware, roleMiddleware("admin"), getAllPatients);
-router.get("/:id", authMiddleware, roleMiddleware("admin", "patient"), getPatientById);
+// Doctors can read patient profiles too — they need patient names on
+// their appointments view and consultation-notes form. Read-only.
+router.get("/:id", authMiddleware, roleMiddleware("admin", "patient", "doctor"), getPatientById);
 router.patch("/:id", authMiddleware, roleMiddleware("admin", "patient"), validate(updatePatientSchema), updatePatient);
 router.delete("/:id", authMiddleware, roleMiddleware("admin"), deletePatient);
 
