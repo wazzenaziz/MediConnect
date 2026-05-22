@@ -21,7 +21,11 @@ const adminRoutes = require("./routes/admin.routes");
 
 // === Global middleware ===
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? [process.env.FRONTEND_URL]
+    : [/^http:\/\/localhost:\d+$/];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 

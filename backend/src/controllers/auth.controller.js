@@ -22,9 +22,22 @@ const login = async (req, res) => {
       });
     }
 
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("id, email, full_name, phone, role")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profileError || !profile) {
+      return res.status(500).json({
+        message: "Authenticated but profile not found.",
+        error: profileError?.message,
+      });
+    }
+
     return res.status(200).json({
       message: "Login successful.",
-      user: data.user,
+      user: profile,
       session: data.session,
       access_token: data.session.access_token,
     });
