@@ -1,6 +1,23 @@
 # MediConnect
 
+[![CI](https://github.com/wazzenaziz/MediConnect/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/wazzenaziz/MediConnect/actions/workflows/ci.yml)
+[![Deploy](https://github.com/wazzenaziz/MediConnect/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/wazzenaziz/MediConnect/actions/workflows/deploy.yml)
+![Node](https://img.shields.io/badge/node-20.x-339933?logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=white)
+![Vite](https://img.shields.io/badge/vite-8-646CFF?logo=vite&logoColor=white)
+![Tailwind](https://img.shields.io/badge/tailwind-4-38BDF8?logo=tailwindcss&logoColor=white)
+![Supabase](https://img.shields.io/badge/supabase-postgres-3ECF8E?logo=supabase&logoColor=white)
+![Socket.io](https://img.shields.io/badge/socket.io-realtime-010101?logo=socket.io&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
 > A medical appointment platform that helps patients reach the **right specialist faster** — by combining AI-assisted symptom triage with location-aware, real-time doctor availability.
+
+## 🚀 Live demo
+
+- **Frontend:** [medi-connect-nine-kappa.vercel.app](https://medi-connect-nine-kappa.vercel.app)
+- **Backend:** [mediconnect-65qh.onrender.com](https://mediconnect-65qh.onrender.com) ([health check](https://mediconnect-65qh.onrender.com/api/health))
+
+> **Note:** The backend runs on Render's free tier, which sleeps after 15 minutes of inactivity. The first request after sleep takes ~50 seconds to wake the instance — refresh once and subsequent requests are fast.
 
 ---
 
@@ -27,16 +44,26 @@ The result: a shorter, smarter path from symptom to consultation.
 
 ## Project Status
 
-This project is delivered in four phases. The README reflects current progress.
+All four planned phases are complete and live in production.
 
 | Phase | Status |
 |---|---|
-| **Phase 1 — Backend API** (Node.js + Express + Supabase) | ✅ **Complete** |
-| **Phase 2 — Frontend** (React + Vite) | 🚧 In progress |
-| **Phase 3 — AI Triage Integration** | 📋 Planned |
-| **Phase 4 — Deployment** | 📋 Planned |
+| **Phase 1 — Backend API** (Node.js + Express + Supabase) | ✅ Complete |
+| **Phase 2 — Frontend** (React + Vite + Tailwind) | ✅ Complete |
+| **Phase 3 — AI Triage Integration** (Groq Llama 3.3 70B) | ✅ Complete |
+| **Phase 4 — Deployment** (Vercel + Render + CI/CD) | ✅ Complete |
 
-This repository currently contains the completed backend. Frontend and integrations will be added in upcoming phases.
+### Features shipped
+
+| Feature | Implementation |
+|---|---|
+| **AI symptom triage** | Patient describes symptoms → backend calls Groq (Llama 3.3 70B) with a constrained system prompt and JSON-mode → returns one of 14 medical specialties with confidence and reasoning |
+| **Proximity doctor search** | PostgreSQL Haversine RPC (`nearby_doctors`) computes distance in pure SQL, no PostGIS dependency. Leaflet + OpenStreetMap render the map with markers, popups, and a radius circle. Browser geolocation with Tunis-center fallback. |
+| **Real-time appointments** | Socket.io server with JWT auth, per-user / per-doctor rooms. Patients get a toast when a doctor cancels; doctors get a toast when a patient books. Slot picker auto-refreshes when someone else takes a slot. |
+| **Booking flow** | 14-day slot picker grouped morning / afternoon / evening. UTC-aware timezone handling for Africa/Tunis. Database-level concurrency safety via PostgreSQL `EXCLUDE` constraint. Cancel + Book-again with deduplication. |
+| **Doctor dashboard** | Today's appointments widget, weekly schedule manager (table editor with lunch break + slot duration + validity range), full appointment lifecycle (pending → confirmed → completed → cancel), consultation notes (diagnosis + prescription + follow-up). |
+| **Auth** | Supabase Auth with role-based routing (patient / doctor / admin). JWT in localStorage with automatic 401 logout. |
+| **CI/CD** | GitHub Actions: lint + build on every push and PR; deploy to Vercel + Render gated on CI success; Dependabot for weekly dependency updates. |
 
 ---
 
@@ -220,31 +247,26 @@ Route middleware runs in this order: **authenticate → role → validate → co
 
 ---
 
-## Roadmap
+## CI / CD
 
-### Phase 2 — Frontend (in progress)
-- React + Vite single-page application
-- Patient flow: symptom input → specialty suggestion → doctor search → booking
-- Doctor dashboard: schedule management, appointment list, note-taking
-- Admin dashboard: user management, platform stats
+This repository ships two GitHub Actions workflows:
 
-### Phase 3 — AI-Assisted Triage (planned)
-- A natural-language symptom intake form
-- Integration with an LLM API to suggest the most likely specialty
-- Confidence indicator and "see a generalist" fallback
+- **[`.github/workflows/ci.yml`](.github/workflows/ci.yml)** — runs on every push and pull request. Two parallel jobs:
+  - `frontend`: install → ESLint → `vite build` (catches broken imports before Vercel builds)
+  - `backend`: install → `node --check` over every `.js` file (catches syntax errors before Render boots)
+- **[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)** — triggers on successful CI run on `main`. POSTs to Vercel and Render deploy hooks. Concurrency-limited so back-to-back pushes don't queue obsolete deploys.
 
-### Phase 4 — Deployment (planned)
-- Backend on a Node-friendly host (Railway / Render)
-- Frontend on a static host (Vercel / Netlify)
-- Production Supabase project with row-level security policies
-- CI for automatic deployment on `main`
+Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) groups weekly minor/patch bumps for `frontend/`, `backend/`, and the GitHub Actions themselves.
 
-### Future improvements (post-defense)
+## Roadmap (post-defense)
+
 - TypeScript migration
-- Automated tests (Jest + Supertest)
+- Automated tests (Jest + Supertest for backend, Vitest + Testing Library for frontend)
 - Row-Level Security policies in Supabase as a second auth layer
-- Email/SMS appointment reminders
+- Email / SMS appointment reminders (24h + 1h before)
 - Doctor verification workflow (license number check)
+- Admin dashboard (user management, platform stats)
+- Mobile-first refinements + native app via Capacitor
 
 ---
 
