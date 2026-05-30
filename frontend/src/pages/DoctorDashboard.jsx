@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
 import { api } from '../lib/api'
 import { Home, Calendar, CalendarClock, FileText, User } from 'lucide-react'
-import { StatusBadge, Person } from '../components/ui'
+import { StatusBadge, Person, SkeletonRows } from '../components/ui'
 
 const TZ = 'Africa/Tunis'
 
@@ -165,11 +165,13 @@ function DoctorHome() {
         </div>
 
         {loading ? (
-          <p className="mt-3 text-sm text-slate-500">Loading…</p>
+          <div className="mt-3">
+            <SkeletonRows rows={3} />
+          </div>
         ) : todays.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="mt-3 text-sm text-ink-500">
             No appointments today. Enjoy the quiet — or check your
-            <Link to="/doctor/schedule" className="ml-1 text-emerald-700 hover:underline">
+            <Link to="/doctor/schedule" className="ml-1 text-teal-700 hover:underline">
               schedule
             </Link>
             .

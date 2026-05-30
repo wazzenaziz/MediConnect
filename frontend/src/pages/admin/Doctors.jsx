@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
 import { useConfirm } from '../../context/ConfirmContext'
 import LocationPicker from '../../components/LocationPicker'
-import { Button, Person } from '../../components/ui'
+import { Stethoscope } from 'lucide-react'
+import { Button, Person, Card, SkeletonRows, EmptyState } from '../../components/ui'
 
 const SPECIALTIES = [
   'General Practitioner',
@@ -322,13 +323,15 @@ export default function AdminDoctors() {
       )}
 
       {loading ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          Loading doctors…
-        </div>
+        <Card className="p-6">
+          <SkeletonRows rows={5} />
+        </Card>
       ) : doctors.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No doctors yet. Onboard one above to get started.
-        </div>
+        <EmptyState
+          icon={<Stethoscope size={40} strokeWidth={1.5} />}
+          title="No doctors yet"
+          hint="Onboard your first doctor using the form above."
+        />
       ) : (
         <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-card">
           <table className="min-w-full divide-y divide-ink-200 text-sm">

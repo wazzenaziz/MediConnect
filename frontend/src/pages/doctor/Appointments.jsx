@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CalendarClock } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useSocket } from '../../context/SocketContext'
+import { Card, SkeletonRows, EmptyState } from '../../components/ui'
 
 const TZ = 'Africa/Tunis'
 
@@ -275,21 +277,23 @@ export default function DoctorAppointments() {
       )}
 
       {loading ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          Loading appointments…
-        </div>
+        <Card className="p-6">
+          <SkeletonRows rows={5} />
+        </Card>
       ) : appointments.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No appointments yet. They’ll appear here when patients book you.
-        </div>
+        <EmptyState
+          icon={<CalendarClock size={40} strokeWidth={1.5} />}
+          title="No appointments yet"
+          hint="They’ll appear here when patients book you."
+        />
       ) : (
         <div className="space-y-8">
           <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
               Upcoming ({upcoming.length})
             </h2>
             {upcoming.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
+              <div className="rounded-xl border border-ink-200 bg-white p-6 text-center text-sm text-ink-500">
                 No upcoming appointments.
               </div>
             ) : (

@@ -4,7 +4,8 @@ import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useSocket } from '../../context/SocketContext'
 import { useConfirm } from '../../context/ConfirmContext'
-import { StatusBadge } from '../../components/ui'
+import { Calendar } from 'lucide-react'
+import { StatusBadge, Button, Card, SkeletonRows, EmptyState } from '../../components/ui'
 
 const TZ = 'Africa/Tunis'
 
@@ -320,44 +321,40 @@ export default function Appointments() {
       </div>
 
       {actionError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-md border border-danger-bd bg-danger-bg px-3 py-2 text-sm text-danger">
           {actionError}
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-md border border-danger-bd bg-danger-bg px-3 py-2 text-sm text-danger">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          Loading appointments…
-        </div>
+        <Card className="p-6">
+          <SkeletonRows rows={4} />
+        </Card>
       ) : appointments.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
-          <p className="text-sm font-medium text-slate-700">
-            You don’t have any appointments yet.
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            Get started by finding a doctor and picking a time.
-          </p>
-          <Link
-            to="/patient/doctors"
-            className="mt-4 inline-block rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
-          >
-            Find a doctor
-          </Link>
-        </div>
+        <EmptyState
+          icon={<Calendar size={40} strokeWidth={1.5} />}
+          title="You don’t have any appointments yet"
+          hint="Get started by finding a doctor and picking a time."
+          action={
+            <Link to="/patient/doctors">
+              <Button>Find a doctor</Button>
+            </Link>
+          }
+        />
       ) : (
         <div className="space-y-8">
           <section>
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
               Upcoming ({upcoming.length})
             </h2>
             {upcoming.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-500">
+              <div className="rounded-xl border border-ink-200 bg-white p-6 text-center text-sm text-ink-500">
                 No upcoming appointments.
               </div>
             ) : (

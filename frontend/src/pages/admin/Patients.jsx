@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Users } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useConfirm } from '../../context/ConfirmContext'
+import { Button, Person, Card, SkeletonRows, EmptyState } from '../../components/ui'
 
 export default function AdminPatients() {
   const confirm = useConfirm()
@@ -57,62 +59,65 @@ export default function AdminPatients() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
             Admin
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900">Patients</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="mt-1 text-2xl font-bold text-ink-900">Patients</h1>
+          <p className="mt-1 text-sm text-ink-500">
             {patients.length} registered patient{patients.length === 1 ? '' : 's'}.
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-md border border-danger-bd bg-danger-bg px-3 py-2 text-sm text-danger">
           {error}
         </div>
       )}
       {actionError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-md border border-danger-bd bg-danger-bg px-3 py-2 text-sm text-danger">
           {actionError}
         </div>
       )}
 
       {loading ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          Loading patients…
-        </div>
+        <Card className="p-6">
+          <SkeletonRows rows={6} />
+        </Card>
       ) : patients.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No patients registered yet.
-        </div>
+        <EmptyState
+          icon={<Users size={40} strokeWidth={1.5} />}
+          title="No patients registered yet"
+          hint="Patient accounts appear here as people sign up."
+        />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-card">
+          <table className="min-w-full divide-y divide-ink-200 text-sm">
+            <thead className="bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
               <tr>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">Email</th>
+                <th className="px-4 py-3 text-left">Patient</th>
                 <th className="px-4 py-3 text-left">Phone</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-ink-150">
               {patients.map((p) => (
                 <tr key={p.id}>
-                  <td className="px-4 py-3 font-medium text-slate-900">
-                    {p.full_name || '—'}
+                  <td className="px-4 py-3">
+                    <Person id={p.id} name={p.full_name} sub={p.email} />
                   </td>
-                  <td className="px-4 py-3 text-slate-700">{p.email || '—'}</td>
-                  <td className="px-4 py-3 text-slate-700">{p.phone || '—'}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-ink-700">
+                    {p.phone || '—'}
+                  </td>
                   <td className="px-4 py-3 text-right">
-                    <button
+                    <Button
+                      variant="danger"
+                      size="sm"
                       onClick={() => handleDelete(p)}
                       disabled={deletingId === p.id}
-                      className="rounded-md border border-rose-200 bg-white px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                     >
                       {deletingId === p.id ? 'Deleting…' : 'Delete'}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}

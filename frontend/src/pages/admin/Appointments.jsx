@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../lib/api'
-import { StatusBadge, Person } from '../../components/ui'
+import { Calendar } from 'lucide-react'
+import { StatusBadge, Person, Card, SkeletonRows, EmptyState } from '../../components/ui'
 
 const TZ = 'Africa/Tunis'
 
@@ -80,13 +81,13 @@ export default function AdminAppointments() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">
+        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
           Admin
         </p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-900">
+        <h1 className="mt-1 text-2xl font-bold text-ink-900">
           All appointments
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-ink-500">
           {appointments.length} appointment
           {appointments.length === 1 ? '' : 's'} across the platform. Sorted
           most-recent first.
@@ -101,8 +102,8 @@ export default function AdminAppointments() {
               onClick={() => setStatusFilter(s)}
               className={`rounded-full border px-3 py-1 text-xs font-medium capitalize ${
                 statusFilter === s
-                  ? 'border-violet-300 bg-violet-50 text-violet-700'
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                  ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                  : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50'
               }`}
             >
               {s}
@@ -112,23 +113,25 @@ export default function AdminAppointments() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-md border border-danger-bd bg-danger-bg px-3 py-2 text-sm text-danger">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
-          Loading…
-        </div>
+        <Card className="p-6">
+          <SkeletonRows rows={6} />
+        </Card>
       ) : filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-500">
-          No appointments matching this filter.
-        </div>
+        <EmptyState
+          icon={<Calendar size={40} strokeWidth={1.5} />}
+          title="No appointments matching this filter"
+          hint="Try a different status, or check back once patients start booking."
+        />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-card">
+          <table className="min-w-full divide-y divide-ink-200 text-sm">
+            <thead className="bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
               <tr>
                 <th className="px-4 py-3 text-left">When</th>
                 <th className="px-4 py-3 text-left">Patient</th>
@@ -136,10 +139,10 @@ export default function AdminAppointments() {
                 <th className="px-4 py-3 text-left">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-ink-150">
               {filtered.map((a) => (
                 <tr key={a.id}>
-                  <td className="px-4 py-3 text-slate-700">
+                  <td className="px-4 py-3 text-ink-700">
                     {formatDateTime(a.start_time)}
                   </td>
                   <td className="px-4 py-3">
