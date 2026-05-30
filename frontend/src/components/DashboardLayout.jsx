@@ -13,6 +13,10 @@ export default function DashboardLayout({ accent = 'sky', roleLabel, navItems })
       pill: 'text-emerald-600',
       active: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     },
+    violet: {
+      pill: 'text-violet-600',
+      active: 'bg-violet-50 text-violet-700 border-violet-200',
+    },
   }
   const a = accentClasses[accent] || accentClasses.sky
 

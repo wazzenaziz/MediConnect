@@ -104,6 +104,114 @@ const getAdminStats = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/admin/doctors
+ *
+ * Atomic admin-side doctor creation:
+ *   1. Create the Supabase auth user (skip email confirmation since
+ *      the admin is vouching for them).
+ *   2. Insert the matching row in our `users` table with role='doctor'.
+ *   3. Insert the doctors profile (specialty, clinic, lat/lng).
+ *
+ * If any step fails, we attempt to roll back the previous steps so
+ * we don't leave half-created accounts behind. This requires the
+ * service-role key, which the backend already uses.
+ */
+const createDoctorAccount = async (req, res) => {
+  const {
+    email,
+    password,
+    full_name,
+    phone,
+    specialty,
+    bio,
+    clinic_address,
+    latitude,
+    longitude,
+  } = req.body;
+
+  let authUserId = null;
+  try {
+    const { data: authData, error: authError } =
+      await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name },
+      });
+
+    if (authError || !authData?.user) {
+      return res.status(400).json({
+        message: "Could not create the auth account",
+        error: authError?.message,
+      });
+    }
+
+    authUserId = authData.user.id;
+
+    const { error: profileError } = await supabase.from("users").insert([
+      {
+        id: authUserId,
+        full_name,
+        email,
+        phone,
+        role: "doctor",
+      },
+    ]);
+
+    if (profileError) {
+      // Roll back the auth user so the email isn't burned.
+      await supabase.auth.admin.deleteUser(authUserId).catch(() => {});
+      return res.status(500).json({
+        message: "Could not create the user profile",
+        error: profileError.message,
+      });
+    }
+
+    const { data: doctorRow, error: doctorError } = await supabase
+      .from("doctors")
+      .insert([
+        {
+          user_id: authUserId,
+          specialty,
+          bio,
+          clinic_address,
+          latitude,
+          longitude,
+        },
+      ])
+      .select()
+      .single();
+
+    if (doctorError) {
+      // Roll back the users row + auth user. Cascade on users → doctors
+      // would handle this if we delete users, but to be explicit we
+      // delete both.
+      await supabase.from("users").delete().eq("id", authUserId).catch(() => {});
+      await supabase.auth.admin.deleteUser(authUserId).catch(() => {});
+      return res.status(500).json({
+        message: "Could not create the doctor profile",
+        error: doctorError.message,
+      });
+    }
+
+    return res.status(201).json({
+      message: "Doctor account created successfully",
+      doctor: doctorRow,
+      user: { id: authUserId, email, full_name, role: "doctor" },
+    });
+  } catch (err) {
+    if (authUserId) {
+      await supabase.auth.admin.deleteUser(authUserId).catch(() => {});
+    }
+    return res.status(500).json({
+      message: "Server error while creating doctor",
+      error: err.message,
+    });
+  }
+};
+
 module.exports = {
   getAdminStats,
+  createDoctorAccount,
 };
