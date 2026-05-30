@@ -1,6 +1,15 @@
+// ============================================================
+// MediConnect — DashboardLayout.jsx   (REPLACE existing)
+// frontend/src/components/DashboardLayout.jsx
+// Fixes: (1) role now a coloured PILL, not faint grey text.
+//        (2) log-out gets an icon + a real user card (avatar).
+// Requires: lucide-react, and ../lib/ui (Avatar / roleToken).
+// ============================================================
 import { NavLink, Outlet } from 'react-router-dom'
+import { LogOut } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { roleToken } from '../lib/ui'
+import { Avatar } from './ui'
 import NotificationBell from './NotificationBell'
 
 // Legacy accent props (sky/emerald/violet) → design-system role names.
@@ -10,19 +19,11 @@ function Logo() {
   return (
     <svg width="30" height="30" viewBox="0 0 48 48" fill="none" aria-label="MediConnect">
       <rect x="2" y="2" width="44" height="44" rx="13" fill="url(#mc)" />
-      <path
-        d="M10 25h6l3-7 4 14 3-9 2.5 5H38"
-        stroke="#fff"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <defs>
-        <linearGradient id="mc" x1="2" y1="2" x2="46" y2="46">
-          <stop stopColor="#2e6bf0" />
-          <stop offset="1" stopColor="#0d8276" />
-        </linearGradient>
-      </defs>
+      <path d="M10 25h6l3-7 4 14 3-9 2.5 5H38" stroke="#fff" strokeWidth="3.2"
+        strokeLinecap="round" strokeLinejoin="round" />
+      <defs><linearGradient id="mc" x1="2" y1="2" x2="46" y2="46">
+        <stop stopColor="#2e6bf0" /><stop offset="1" stopColor="#0d8276" />
+      </linearGradient></defs>
     </svg>
   )
 }
@@ -35,23 +36,31 @@ function Wordmark() {
   )
 }
 
+// Coloured role pill — uses the role accent (blue/teal/indigo).
+function RolePill({ role, label }) {
+  const a = roleToken(role)
+  return (
+    <span className={`mt-3 inline-flex w-max items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.04em] ${a.active}`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${a.solid}`} />
+      {label}
+    </span>
+  )
+}
+
 export default function DashboardLayout({ accent = 'sky', roleLabel, navItems }) {
   const { user, logout } = useAuth()
-
   const role = ACCENT_TO_ROLE[accent] || accent
   const a = roleToken(role)
 
   return (
     <div className="flex min-h-screen bg-ink-50">
       <aside className="hidden w-64 flex-col border-r border-ink-200 bg-white px-4 py-6 md:flex">
-        <div className="mb-8 px-2">
+        <div className="mb-7 px-2">
           <div className="flex items-center gap-2">
             <Logo />
             <Wordmark />
           </div>
-          <p className="mt-1.5 text-xs font-semibold uppercase tracking-wide text-ink-500">
-            {roleLabel}
-          </p>
+          <RolePill role={role} label={roleLabel} />
         </div>
 
         <nav className="flex-1 space-y-1">
@@ -62,8 +71,7 @@ export default function DashboardLayout({ accent = 'sky', roleLabel, navItems })
               end={item.end}
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                  isActive
-                    ? a.active
+                  isActive ? a.active
                     : 'border-transparent text-ink-600 hover:bg-ink-100 hover:text-ink-900'
                 }`
               }
@@ -74,24 +82,29 @@ export default function DashboardLayout({ accent = 'sky', roleLabel, navItems })
           ))}
         </nav>
 
+        {/* user card + log out */}
         <div className="mt-6 border-t border-ink-200 pt-4">
-          <div className="px-2 pb-2 text-xs">
-            <p className="font-medium text-ink-700">
-              {user?.full_name || 'Account'}
-            </p>
-            <p className="truncate text-ink-500">{user?.email}</p>
+          <div className="flex items-center gap-2.5 rounded-lg border border-ink-200 bg-ink-50 p-2.5">
+            <Avatar name={user?.full_name} id={user?.email} size={38} />
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-bold text-ink-900">
+                {user?.full_name || 'Account'}
+              </p>
+              <p className="truncate text-[11.5px] text-ink-500">{user?.email}</p>
+            </div>
           </div>
           <button
             onClick={logout}
-            className="w-full rounded-lg border border-ink-200 px-3 py-2 text-left text-sm text-ink-700 hover:bg-ink-50"
+            className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-md border border-ink-300 bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink-700 transition hover:border-danger-bd hover:bg-danger-bg hover:text-danger"
           >
+            <LogOut size={16} strokeWidth={1.9} />
             Log out
           </button>
         </div>
       </aside>
 
       <div className="flex min-h-screen flex-1 flex-col">
-        {/* Desktop top header — bell sits here with room for the dropdown */}
+        {/* Desktop top header */}
         <header className="hidden h-14 items-center justify-end border-b border-ink-200 bg-white px-6 md:flex">
           <NotificationBell />
         </header>
@@ -101,16 +114,18 @@ export default function DashboardLayout({ accent = 'sky', roleLabel, navItems })
           <div className="flex items-center gap-2">
             <Logo />
             <Wordmark />
-            <span className="text-xs font-semibold uppercase tracking-wide text-ink-500">
-              · {roleLabel}
+            <span className={`ml-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${a.active}`}>
+              {roleLabel}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
             <button
               onClick={logout}
-              className="rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-700 hover:bg-ink-50"
+              aria-label="Log out"
+              className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-semibold text-ink-700 hover:border-danger-bd hover:bg-danger-bg hover:text-danger"
             >
+              <LogOut size={14} strokeWidth={1.9} />
               Log out
             </button>
           </div>
@@ -124,9 +139,7 @@ export default function DashboardLayout({ accent = 'sky', roleLabel, navItems })
               end={item.end}
               className={({ isActive }) =>
                 `whitespace-nowrap rounded-md border px-3 py-1.5 text-xs font-medium ${
-                  isActive
-                    ? a.active
-                    : 'border-transparent text-ink-600 hover:bg-ink-100'
+                  isActive ? a.active : 'border-transparent text-ink-600 hover:bg-ink-100'
                 }`
               }
             >
