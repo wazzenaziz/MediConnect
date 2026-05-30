@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Routes, Route, Navigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
-import Placeholder from './patient/Placeholder'
 import Schedule from './doctor/Schedule'
 import DoctorAppointments from './doctor/Appointments'
 import DoctorNotes from './doctor/Notes'
+import DoctorProfilePage from './doctor/Profile'
 import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
 import { api } from '../lib/api'
@@ -211,17 +211,7 @@ export default function DoctorDashboard() {
         <Route path="schedule" element={<Schedule />} />
         <Route path="appointments" element={<DoctorAppointments />} />
         <Route path="notes" element={<DoctorNotes />} />
-        <Route
-          path="profile"
-          element={
-            <Placeholder
-              eyebrow="Doctor"
-              accent="emerald"
-              title="Profile"
-              description="Account and clinic information."
-            />
-          }
-        />
+        <Route path="profile" element={<DoctorProfilePage />} />
         <Route path="*" element={<Navigate to="/doctor" replace />} />
       </Route>
     </Routes>

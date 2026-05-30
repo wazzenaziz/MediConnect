@@ -1,11 +1,11 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import DashboardLayout from '../components/DashboardLayout'
 import PatientHome from './patient/PatientHome'
-import Placeholder from './patient/Placeholder'
 import Triage from './patient/Triage'
 import Doctors from './patient/Doctors'
 import DoctorProfile from './patient/DoctorProfile'
 import Appointments from './patient/Appointments'
+import PatientProfile from './patient/Profile'
 
 const navItems = [
   { to: '/patient', label: 'Home', icon: '🏠', end: true },
@@ -26,15 +26,7 @@ export default function PatientDashboard() {
         <Route path="doctors" element={<Doctors />} />
         <Route path="doctors/:id" element={<DoctorProfile />} />
         <Route path="appointments" element={<Appointments />} />
-        <Route
-          path="profile"
-          element={
-            <Placeholder
-              title="Profile"
-              description="Account settings will appear here."
-            />
-          }
-        />
+        <Route path="profile" element={<PatientProfile />} />
         <Route path="*" element={<Navigate to="/patient" replace />} />
       </Route>
     </Routes>
