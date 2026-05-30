@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { SocketProvider } from './context/SocketContext'
 import { ToastProvider } from './context/ToastContext'
+import { NotificationProvider } from './context/NotificationContext'
 import RealtimeBridge from './components/RealtimeBridge'
 import ProtectedRoute from './components/ProtectedRoute'
 import Landing from './pages/Landing'
@@ -17,7 +18,8 @@ export default function App() {
     <AuthProvider>
       <SocketProvider>
         <ToastProvider>
-          <RealtimeBridge />
+          <NotificationProvider>
+            <RealtimeBridge />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Landing />} />
@@ -50,6 +52,7 @@ export default function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          </NotificationProvider>
         </ToastProvider>
       </SocketProvider>
     </AuthProvider>

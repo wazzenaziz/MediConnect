@@ -42,11 +42,11 @@ export default function RealtimeBridge() {
           body: `${patient?.full_name || 'A patient'} booked you for ${formatWhen(appointment.start_time)}.`,
         })
       } else {
-        // Patient also gets a confirmation in any other open tabs.
+        // Patient also sees their own booking in any other open tabs.
         toast({
           tone: 'success',
-          title: 'Appointment confirmed',
-          body: `Your visit is set for ${formatWhen(appointment.start_time)}.`,
+          title: 'Appointment booked',
+          body: `Your visit is set for ${formatWhen(appointment.start_time)}. Awaiting doctor confirmation.`,
           duration: 4000,
         })
       }
@@ -76,12 +76,46 @@ export default function RealtimeBridge() {
       }
     }
 
+    function onStatusChanged({ appointment, status }) {
+      if (!appointment) return
+      // Cancellations are handled by onCancelled — skip the duplicate.
+      if (status === 'cancelled') return
+      const when = formatWhen(appointment.start_time)
+      if (user?.role === 'patient') {
+        const label =
+          status === 'confirmed'
+            ? 'was confirmed by the doctor'
+            : status === 'completed'
+              ? 'was marked completed'
+              : `is now ${status}`
+        toast({
+          tone: status === 'completed' ? 'success' : 'info',
+          title: 'Appointment update',
+          body: `Your ${when} appointment ${label}.`,
+        })
+      }
+    }
+
+    function onNoteCreated() {
+      if (user?.role === 'patient') {
+        toast({
+          tone: 'info',
+          title: 'New consultation note',
+          body: 'Your doctor wrote a note for your last visit. Open Appointments to read it.',
+        })
+      }
+    }
+
     socket.on('appointment:created', onCreated)
     socket.on('appointment:cancelled', onCancelled)
+    socket.on('appointment:status-changed', onStatusChanged)
+    socket.on('note:created', onNoteCreated)
 
     return () => {
       socket.off('appointment:created', onCreated)
       socket.off('appointment:cancelled', onCancelled)
+      socket.off('appointment:status-changed', onStatusChanged)
+      socket.off('note:created', onNoteCreated)
     }
   }, [socket, toast, user?.role])
 

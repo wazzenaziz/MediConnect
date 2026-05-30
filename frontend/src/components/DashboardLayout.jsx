@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import NotificationBell from './NotificationBell'
 
 export default function DashboardLayout({ accent = 'sky', roleLabel, navItems }) {
   const { user, logout } = useAuth()
@@ -70,17 +71,26 @@ export default function DashboardLayout({ accent = 'sky', roleLabel, navItems })
         </div>
       </aside>
 
-      <div className="flex-1">
+      <div className="flex min-h-screen flex-1 flex-col">
+        {/* Desktop top header — bell sits here with room for the dropdown */}
+        <header className="hidden h-14 items-center justify-end border-b border-slate-200 bg-white px-6 md:flex">
+          <NotificationBell />
+        </header>
+
+        {/* Mobile top header */}
         <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3 md:hidden">
           <p className={`text-sm font-semibold uppercase tracking-wide ${a.pill}`}>
             MediConnect · {roleLabel}
           </p>
-          <button
-            onClick={logout}
-            className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Log out
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <button
+              onClick={logout}
+              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Log out
+            </button>
+          </div>
         </header>
 
         <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-4 py-2 md:hidden">
@@ -102,7 +112,7 @@ export default function DashboardLayout({ accent = 'sky', roleLabel, navItems })
           ))}
         </nav>
 
-        <main className="p-4 md:p-8">
+        <main className="flex-1 p-4 md:p-8">
           <Outlet />
         </main>
       </div>

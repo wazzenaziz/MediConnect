@@ -1,6 +1,18 @@
 const supabase = require("../config/supabase");
+const { emitTo } = require("../config/io");
 
 const { getLoggedInDoctorProfile, authorizeAppointmentAccess } = require("../utils/auth-helpers");
+
+// Resolve a doctor's auth user_id from a doctor row id so we can emit
+// to their personal socket room (user:<userId>).
+const doctorUserIdFor = async (doctorId) => {
+  const { data } = await supabase
+    .from("doctors")
+    .select("user_id")
+    .eq("id", doctorId)
+    .maybeSingle();
+  return data?.user_id || null;
+};
 
 /**
  * POST /api/notes
@@ -70,6 +82,17 @@ const createNote = async (req, res) => {
         error: error.message,
       });
     }
+
+    // Fan out to the patient (they now have a note to read) and to the
+    // doctor's other tabs (so the Notes page list stays in sync).
+    (async () => {
+      const doctorUserId = await doctorUserIdFor(data.doctor_id);
+      const payload = { note: data };
+      emitTo(`user:${data.patient_id}`, "note:created", payload);
+      if (doctorUserId) emitTo(`user:${doctorUserId}`, "note:created", payload);
+    })().catch((e) =>
+      console.error("[socket] note:created fan-out:", e.message),
+    );
 
     return res.status(201).json({
       message: "Note created successfully",

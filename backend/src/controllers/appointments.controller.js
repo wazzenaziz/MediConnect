@@ -558,6 +558,46 @@ const updateAppointmentStatus = async (req, res) => {
       });
     }
 
+    // Fan-out: tell the patient + the doctor that the status changed.
+    // The triggering side (req.user.role) gets notified too — keeps
+    // their other open tabs in sync.
+    //
+    // If the new status is "cancelled", we also emit the dedicated
+    // appointment:cancelled event so the client-side handlers (which
+    // produce the actual user-facing notification text for cancels)
+    // fire regardless of whether the cancel came via PATCH /:id/cancel
+    // (patient flow) or PATCH /:id/status (doctor flow). The slot
+    // picker fan-out also goes out so any open slot pickers refresh.
+    (async () => {
+      const doctorUserId = await doctorUserIdFor(data.doctor_id);
+      const statusPayload = {
+        appointment: data,
+        status: data.status,
+        changed_by: req.user.role,
+      };
+      if (doctorUserId)
+        emitTo(`user:${doctorUserId}`, "appointment:status-changed", statusPayload);
+      emitTo(`user:${data.patient_id}`, "appointment:status-changed", statusPayload);
+
+      if (data.status === "cancelled") {
+        const cancelPayload = {
+          appointment: data,
+          cancelled_by: req.user.role,
+        };
+        if (doctorUserId)
+          emitTo(`user:${doctorUserId}`, "appointment:cancelled", cancelPayload);
+        emitTo(`user:${data.patient_id}`, "appointment:cancelled", cancelPayload);
+        emitTo(`doctor:${data.doctor_id}`, "doctor:slot-changed", {
+          doctor_id: data.doctor_id,
+          start_time: data.start_time,
+          end_time: data.end_time,
+          reason: "cancelled",
+        });
+      }
+    })().catch((e) =>
+      console.error("[socket] status-changed fan-out:", e.message),
+    );
+
     return res.status(200).json({
       message: "Appointment status updated successfully",
       appointment: data,
