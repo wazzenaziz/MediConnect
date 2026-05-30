@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
 import { useConfirm } from '../../context/ConfirmContext'
+import LocationPicker from '../../components/LocationPicker'
 
 const SPECIALTIES = [
   'General Practitioner',
@@ -256,52 +257,23 @@ export default function AdminDoctors() {
                 className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
               />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600">
-                Clinic address
-              </label>
-              <input
-                type="text"
-                required
-                value={form.clinic_address}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, clinic_address: e.target.value }))
+            <div className="md:col-span-2">
+              <LocationPicker
+                accent="violet"
+                addressLabel="Clinic location"
+                value={{
+                  lat: form.latitude !== '' ? Number(form.latitude) : null,
+                  lng: form.longitude !== '' ? Number(form.longitude) : null,
+                  address: form.clinic_address,
+                }}
+                onChange={({ lat, lng, address }) =>
+                  setForm((f) => ({
+                    ...f,
+                    latitude: lat ?? '',
+                    longitude: lng ?? '',
+                    clinic_address: address ?? f.clinic_address,
+                  }))
                 }
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600">
-                Latitude <span className="text-slate-400">(optional)</span>
-              </label>
-              <input
-                type="number"
-                step="any"
-                min={-90}
-                max={90}
-                value={form.latitude}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, latitude: e.target.value }))
-                }
-                placeholder="36.8065"
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600">
-                Longitude <span className="text-slate-400">(optional)</span>
-              </label>
-              <input
-                type="number"
-                step="any"
-                min={-180}
-                max={180}
-                value={form.longitude}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, longitude: e.target.value }))
-                }
-                placeholder="10.1815"
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
               />
             </div>
             <div className="md:col-span-2">

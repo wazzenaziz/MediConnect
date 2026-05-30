@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
+import LocationPicker from '../../components/LocationPicker'
 
 const SPECIALTIES = [
   'General Practitioner',
@@ -227,64 +228,22 @@ export default function DoctorProfile() {
               </div>
 
               <div className="md:col-span-2">
-                <label
-                  htmlFor="clinic_address"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  Clinic address
-                </label>
-                <input
-                  id="clinic_address"
-                  type="text"
-                  required
-                  value={form.clinic_address}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, clinic_address: e.target.value }))
+                <LocationPicker
+                  accent="emerald"
+                  addressLabel="Clinic location"
+                  value={{
+                    lat: form.latitude !== '' ? Number(form.latitude) : null,
+                    lng: form.longitude !== '' ? Number(form.longitude) : null,
+                    address: form.clinic_address,
+                  }}
+                  onChange={({ lat, lng, address }) =>
+                    setForm((f) => ({
+                      ...f,
+                      latitude: lat ?? '',
+                      longitude: lng ?? '',
+                      clinic_address: address ?? f.clinic_address,
+                    }))
                   }
-                  className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="latitude"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  Latitude
-                </label>
-                <input
-                  id="latitude"
-                  type="number"
-                  step="any"
-                  min={-90}
-                  max={90}
-                  value={form.latitude}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, latitude: e.target.value }))
-                  }
-                  placeholder="36.8065"
-                  className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="longitude"
-                  className="block text-sm font-medium text-slate-700"
-                >
-                  Longitude
-                </label>
-                <input
-                  id="longitude"
-                  type="number"
-                  step="any"
-                  min={-180}
-                  max={180}
-                  value={form.longitude}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, longitude: e.target.value }))
-                  }
-                  placeholder="10.1815"
-                  className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
                 />
               </div>
 
