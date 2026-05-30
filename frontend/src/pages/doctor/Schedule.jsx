@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
+import { useConfirm } from '../../context/ConfirmContext'
 
 const DAYS = [
   'monday',
@@ -36,6 +37,7 @@ function toDateInput(d) {
 
 export default function Schedule() {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const [doctorId, setDoctorId] = useState(null)
   const [schedules, setSchedules] = useState([])
   const [loading, setLoading] = useState(true)
@@ -151,7 +153,15 @@ export default function Schedule() {
   }
 
   async function handleDelete(s) {
-    if (!window.confirm(`Delete the ${s.day_of_week} schedule?`)) return
+    const ok = await confirm({
+      title: `Delete ${s.day_of_week} schedule?`,
+      description:
+        'Patients won’t be able to book this day until you add a new schedule for it.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep',
+      tone: 'danger',
+    })
+    if (!ok) return
     try {
       await api.delete(`/schedules/${s.id}`)
       setSchedules((prev) => prev.filter((x) => x.id !== s.id))

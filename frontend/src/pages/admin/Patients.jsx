@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
+import { useConfirm } from '../../context/ConfirmContext'
 
 export default function AdminPatients() {
+  const confirm = useConfirm()
   const [patients, setPatients] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -28,12 +30,15 @@ export default function AdminPatients() {
   }, [])
 
   async function handleDelete(p) {
-    if (
-      !window.confirm(
-        `Delete patient ${p.full_name || p.email}? This cannot be undone.`,
-      )
-    )
-      return
+    const ok = await confirm({
+      title: `Delete ${p.full_name || p.email}?`,
+      description:
+        'This permanently removes the patient account and cannot be undone.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep',
+      tone: 'danger',
+    })
+    if (!ok) return
     setDeletingId(p.id)
     setActionError(null)
     try {

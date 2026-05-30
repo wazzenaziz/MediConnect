@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
+import { useConfirm } from '../../context/ConfirmContext'
 
 const SPECIALTIES = [
   'General Practitioner',
@@ -31,6 +32,7 @@ const BLANK_FORM = {
 }
 
 export default function AdminDoctors() {
+  const confirm = useConfirm()
   const [doctors, setDoctors] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -62,7 +64,15 @@ export default function AdminDoctors() {
 
   async function handleDelete(d) {
     const label = d.full_name || d.specialty || d.id.slice(0, 8)
-    if (!window.confirm(`Delete doctor ${label}? This cannot be undone.`)) return
+    const ok = await confirm({
+      title: `Delete doctor ${label}?`,
+      description:
+        'This permanently removes the doctor profile. Existing appointments and notes are kept for the record.',
+      confirmLabel: 'Delete',
+      cancelLabel: 'Keep',
+      tone: 'danger',
+    })
+    if (!ok) return
     setDeletingId(d.id)
     setActionError(null)
     try {

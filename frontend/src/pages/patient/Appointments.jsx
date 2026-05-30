@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useSocket } from '../../context/SocketContext'
+import { useConfirm } from '../../context/ConfirmContext'
 
 const TZ = 'Africa/Tunis'
 
@@ -43,6 +44,7 @@ const STATUS_STYLES = {
 
 export default function Appointments() {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const [appointments, setAppointments] = useState([])
   const [doctorsById, setDoctorsById] = useState({})
   // Indexed by appointment_id so completed cards can show their note inline.
@@ -126,12 +128,14 @@ export default function Appointments() {
   }, [socket, user?.id])
 
   async function handleCancel(appt) {
-    if (
-      !window.confirm(
-        'Cancel this appointment? This cannot be undone.',
-      )
-    )
-      return
+    const ok = await confirm({
+      title: 'Cancel this appointment?',
+      description: 'This cannot be undone.',
+      confirmLabel: 'Yes, cancel',
+      cancelLabel: 'Keep it',
+      tone: 'danger',
+    })
+    if (!ok) return
     setCancellingId(appt.id)
     setActionError(null)
     try {

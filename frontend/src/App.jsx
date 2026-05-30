@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext'
 import { SocketProvider } from './context/SocketContext'
 import { ToastProvider } from './context/ToastContext'
 import { NotificationProvider } from './context/NotificationContext'
+import { ConfirmProvider } from './context/ConfirmContext'
 import RealtimeBridge from './components/RealtimeBridge'
 import ProtectedRoute from './components/ProtectedRoute'
 import Landing from './pages/Landing'
@@ -19,8 +20,9 @@ export default function App() {
       <SocketProvider>
         <ToastProvider>
           <NotificationProvider>
-            <RealtimeBridge />
-          <BrowserRouter>
+            <ConfirmProvider>
+              <RealtimeBridge />
+              <BrowserRouter>
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
@@ -50,8 +52,9 @@ export default function App() {
                 }
               />
               <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
+                </Routes>
+              </BrowserRouter>
+            </ConfirmProvider>
           </NotificationProvider>
         </ToastProvider>
       </SocketProvider>
