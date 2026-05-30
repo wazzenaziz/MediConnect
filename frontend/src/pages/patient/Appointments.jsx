@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useSocket } from '../../context/SocketContext'
 import { useConfirm } from '../../context/ConfirmContext'
+import { StatusBadge } from '../../components/ui'
 
 const TZ = 'Africa/Tunis'
 
@@ -29,17 +30,6 @@ function formatDateTime(iso) {
       timeZone: TZ,
     }),
   }
-}
-
-const STATUS_STYLES = {
-  pending:
-    'bg-amber-50 text-amber-700 border-amber-200',
-  confirmed:
-    'bg-emerald-50 text-emerald-700 border-emerald-200',
-  completed:
-    'bg-slate-100 text-slate-700 border-slate-200',
-  cancelled:
-    'bg-rose-50 text-rose-700 border-rose-200',
 }
 
 export default function Appointments() {
@@ -205,13 +195,7 @@ export default function Appointments() {
               {doctor?.specialty || '—'}
             </p>
           </div>
-          <span
-            className={`rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${
-              STATUS_STYLES[appt.status] || STATUS_STYLES.pending
-            }`}
-          >
-            {appt.status}
-          </span>
+          <StatusBadge status={appt.status} />
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-700">

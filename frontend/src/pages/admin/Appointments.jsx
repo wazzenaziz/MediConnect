@@ -1,14 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../lib/api'
+import { StatusBadge } from '../../components/ui'
 
 const TZ = 'Africa/Tunis'
-
-const STATUS_TONE = {
-  pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  confirmed: 'bg-sky-50 text-sky-700 border-sky-200',
-  completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
-}
 
 function asUtcDate(iso) {
   if (!iso) return null
@@ -140,13 +134,7 @@ export default function AdminAppointments() {
                     #{(a.doctor_id || '').slice(0, 8)}
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${
-                        STATUS_TONE[a.status] || STATUS_TONE.pending
-                      }`}
-                    >
-                      {a.status}
-                    </span>
+                    <StatusBadge status={a.status} />
                   </td>
                 </tr>
               ))}

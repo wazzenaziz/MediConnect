@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
 import { api } from '../lib/api'
 import { Home, Calendar, CalendarClock, FileText, User } from 'lucide-react'
+import { StatusBadge } from '../components/ui'
 
 const TZ = 'Africa/Tunis'
 
@@ -172,17 +173,7 @@ function DoctorHome() {
                     Patient #{a.patient_id.slice(0, 8)}
                   </p>
                 </div>
-                <span
-                  className={`rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${
-                    a.status === 'pending'
-                      ? 'border-amber-200 bg-amber-50 text-amber-700'
-                      : a.status === 'confirmed'
-                        ? 'border-sky-200 bg-sky-50 text-sky-700'
-                        : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                  }`}
-                >
-                  {a.status}
-                </span>
+                <StatusBadge status={a.status} />
               </li>
             ))}
           </ul>

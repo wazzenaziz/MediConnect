@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { TriangleAlert } from 'lucide-react'
 import { api } from '../../lib/api'
 import { Button } from '../../components/ui'
+import { confidence } from '../../lib/ui'
 
 const EXAMPLES = [
   'I have a red itchy rash on my forearm that started two days ago',
@@ -9,18 +11,6 @@ const EXAMPLES = [
   'I’ve had a constant headache for a week with sensitivity to light',
   'My stomach has been hurting after meals and I feel nauseous',
 ]
-
-function confidenceLabel(c) {
-  if (c >= 0.85) return 'High confidence'
-  if (c >= 0.6) return 'Medium confidence'
-  return 'Low confidence'
-}
-
-function confidenceColor(c) {
-  if (c >= 0.85) return 'bg-emerald-500'
-  if (c >= 0.6) return 'bg-amber-500'
-  return 'bg-rose-500'
-}
 
 export default function Triage() {
   const [symptoms, setSymptoms] = useState('')
@@ -61,6 +51,7 @@ export default function Triage() {
   }
 
   const confidencePct = result ? Math.round(result.confidence * 100) : 0
+  const conf = result ? confidence(result.confidence) : null
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -166,7 +157,7 @@ export default function Triage() {
           <div className="mt-4">
             <div className="flex items-center justify-between text-xs">
               <span className="font-medium text-ink-600">
-                {confidenceLabel(result.confidence)}
+                {conf.label}
               </span>
               <span className="font-semibold text-ink-700">
                 {confidencePct}%
@@ -180,7 +171,7 @@ export default function Triage() {
               aria-valuemax={100}
             >
               <div
-                className={`h-full ${confidenceColor(result.confidence)} transition-all`}
+                className={`h-full ${conf.bar} transition-all`}
                 style={{ width: `${confidencePct}%` }}
               />
             </div>
@@ -207,9 +198,12 @@ export default function Triage() {
             </Button>
           </div>
 
-          <p className="mt-5 text-xs text-slate-500">
-            ⚠️ This is an AI suggestion, not a medical diagnosis. For emergencies,
-            call your local emergency number.
+          <p className="mt-5 flex items-start gap-1.5 text-xs text-ink-500">
+            <TriangleAlert size={14} strokeWidth={1.8} className="mt-0.5 shrink-0 text-warning" aria-hidden="true" />
+            <span>
+              This is an AI suggestion, not a medical diagnosis. For emergencies,
+              call your local emergency number.
+            </span>
           </p>
         </div>
       )}
