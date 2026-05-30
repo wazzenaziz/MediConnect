@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { api } from '../lib/api'
 
 // Same icon fix as the patient search map — Vite mangles Leaflet's
 // default marker URLs, so we point them at the CDN copies.
@@ -14,10 +15,27 @@ L.Icon.Default.mergeOptions({
 })
 
 const TUNIS_CENTER = [36.8065, 10.1815]
-const NOMINATIM = 'https://nominatim.openstreetmap.org'
+
+// A coordinate pair is "usable" only if it's a real number, in range,
+// and not the (0,0) null-island default that bad seed data leaves.
+function isUsableCoord(lat, lng) {
+  const a = Number(lat)
+  const b = Number(lng)
+  if (Number.isNaN(a) || Number.isNaN(b)) return false
+  if (a < -90 || a > 90 || b < -180 || b > 180) return false
+  if (Math.abs(a) < 0.0001 && Math.abs(b) < 0.0001) return false // (0,0)
+  return true
+}
+
+function normalizePosition(value) {
+  if (value && isUsableCoord(value.lat, value.lng)) {
+    return [Number(value.lat), Number(value.lng)]
+  }
+  return TUNIS_CENTER
+}
 
 // react-leaflet doesn't reactively update <MapContainer center> after
-// mount. This child component sees state changes and re-pans the map.
+// mount. This child sees state changes and re-pans the map.
 function MapPanner({ position, zoom }) {
   const map = useMap()
   useEffect(() => {
@@ -30,21 +48,21 @@ function MapPanner({ position, zoom }) {
 /**
  * Pick a clinic location with an address search + draggable pin.
  *
- * Props:
- *   value: { lat: number, lng: number, address?: string } | null
- *   onChange: ({ lat, lng, address }) => void
- *   accent: 'sky' | 'emerald' | 'violet' (focus ring color)
+ * Address search and reverse-geocoding go through our own backend
+ * (/api/geocode/*), which proxies OpenStreetMap Nominatim with a
+ * proper User-Agent — browsers can't set that header, so a direct
+ * browser→Nominatim call gets blocked.
  *
- * The picker is uncontrolled internally — it tracks search state and
- * the marker position — but every time the user picks an address or
- * drops a new pin, we call `onChange` with the new triple so the
- * parent form can persist it.
+ * Props:
+ *   value: { lat, lng, address? } | null
+ *   onChange: ({ lat, lng, address }) => void
+ *   accent: 'sky' | 'emerald' | 'violet'
  */
 export default function LocationPicker({
   value,
   onChange,
   accent = 'emerald',
-  addressLabel = 'Clinic address',
+  addressLabel = 'Clinic location',
   required = true,
 }) {
   const ring = {
@@ -53,16 +71,9 @@ export default function LocationPicker({
     violet: 'focus:border-violet-500 focus:ring-violet-200',
   }[accent]
 
-  // The current pin position. Falls back to Tunis if the parent has
-  // no value yet (new doctor onboarding case).
-  const [position, setPosition] = useState(() =>
-    value?.lat != null && value?.lng != null
-      ? [Number(value.lat), Number(value.lng)]
-      : TUNIS_CENTER,
-  )
+  const [position, setPosition] = useState(() => normalizePosition(value))
   const [address, setAddress] = useState(value?.address || '')
 
-  // Search dropdown state.
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
   const [searching, setSearching] = useState(false)
@@ -70,30 +81,24 @@ export default function LocationPicker({
   const [showResults, setShowResults] = useState(false)
   const debounceRef = useRef(null)
 
-  // Reverse-geocode the current pin when it moves via drag.
   const [resolving, setResolving] = useState(false)
   const reverseSeqRef = useRef(0)
 
-  // When the parent updates `value` from outside (e.g. resetting the
-  // form), keep our internal state in sync. We compare numerically
-  // to avoid the loop a strict equality check would cause.
+  // Keep internal state in sync if the parent resets `value`.
   useEffect(() => {
-    const lat = value?.lat
-    const lng = value?.lng
-    if (lat == null || lng == null) return
-    setPosition((cur) => {
-      const next = [Number(lat), Number(lng)]
-      if (cur[0] === next[0] && cur[1] === next[1]) return cur
-      return next
-    })
+    if (value && isUsableCoord(value.lat, value.lng)) {
+      const next = [Number(value.lat), Number(value.lng)]
+      setPosition((cur) =>
+        cur[0] === next[0] && cur[1] === next[1] ? cur : next,
+      )
+    }
     if (typeof value?.address === 'string') {
       setAddress((cur) => (cur === value.address ? cur : value.address))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value?.lat, value?.lng, value?.address])
 
-  // Debounced address search via Nominatim. They ask for at most 1
-  // req/sec and a User-Agent — debouncing at 400ms keeps us polite.
+  // Debounced address search via our backend proxy.
   useEffect(() => {
     if (!query || query.trim().length < 3) {
       setResults([])
@@ -104,80 +109,61 @@ export default function LocationPicker({
       setSearching(true)
       setSearchError(null)
       try {
-        const url = new URL(`${NOMINATIM}/search`)
-        url.searchParams.set('q', query)
-        url.searchParams.set('format', 'json')
-        url.searchParams.set('addressdetails', '1')
-        url.searchParams.set('limit', '6')
-        // Bias toward Tunisia — most of our doctors are there. Drop
-        // this if MediConnect expands to other countries.
-        url.searchParams.set('countrycodes', 'tn')
-        const res = await fetch(url, {
-          headers: { 'Accept-Language': 'en' },
+        const { data } = await api.get('/geocode/search', {
+          params: { q: query },
         })
-        if (!res.ok) throw new Error(`Search failed (${res.status})`)
-        const data = await res.json()
-        setResults(Array.isArray(data) ? data : [])
+        setResults(data.results || [])
         setShowResults(true)
       } catch (err) {
-        setSearchError(err.message || 'Search failed.')
+        setSearchError(
+          err.response?.data?.message || 'Address search failed.',
+        )
         setResults([])
       } finally {
         setSearching(false)
       }
-    }, 400)
+    }, 450)
     return () => debounceRef.current && clearTimeout(debounceRef.current)
   }, [query])
 
-  // Reverse-geocode the current pin position to find a human-readable
-  // address. Called after pin drag. We tag each request with a
-  // monotonically increasing seq so a slow earlier response doesn't
-  // overwrite the address from a newer drag.
   async function reverseGeocode([lat, lng]) {
     const mySeq = ++reverseSeqRef.current
     setResolving(true)
     try {
-      const url = new URL(`${NOMINATIM}/reverse`)
-      url.searchParams.set('lat', String(lat))
-      url.searchParams.set('lon', String(lng))
-      url.searchParams.set('format', 'json')
-      url.searchParams.set('addressdetails', '1')
-      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } })
-      if (!res.ok) return
-      const data = await res.json()
-      if (mySeq !== reverseSeqRef.current) return // a newer drag superseded us
+      const { data } = await api.get('/geocode/reverse', {
+        params: { lat, lng },
+      })
+      if (mySeq !== reverseSeqRef.current) return
       const next = data?.display_name || ''
       setAddress(next)
       onChange?.({ lat, lng, address: next })
     } catch {
-      // Reverse lookup is best-effort — silently swallow.
+      // Best-effort — still report the coords even if naming failed.
+      if (mySeq === reverseSeqRef.current) {
+        onChange?.({ lat, lng, address })
+      }
     } finally {
       if (mySeq === reverseSeqRef.current) setResolving(false)
     }
   }
 
   function pickResult(r) {
+    if (!isUsableCoord(r.lat, r.lng)) return
     const lat = Number(r.lat)
-    const lng = Number(r.lon)
-    if (Number.isNaN(lat) || Number.isNaN(lng)) return
-    const next = r.display_name
+    const lng = Number(r.lng)
     setPosition([lat, lng])
-    setAddress(next)
+    setAddress(r.display_name)
     setQuery('')
     setResults([])
     setShowResults(false)
-    onChange?.({ lat, lng, address: next })
+    onChange?.({ lat, lng, address: r.display_name })
   }
 
-  // Stable marker handlers — recreated on every render is fine here
-  // because Leaflet rebinds them via react-leaflet's reconciler.
   const markerEventHandlers = useMemo(
     () => ({
       dragend: (e) => {
         const { lat, lng } = e.target.getLatLng()
         setPosition([lat, lng])
-        // Don't bubble the address-less change yet — reverseGeocode
-        // will fire the proper onChange with both coords + address.
         reverseGeocode([lat, lng])
       },
     }),
@@ -192,16 +178,15 @@ export default function LocationPicker({
         {required && <span className="text-rose-500"> *</span>}
       </label>
 
-      <div className="relative">
+      {/* z-[1000] lifts this wrapper (and its dropdown) above Leaflet's
+          map panes, which create their own stacking context up to ~700.
+          Without it the suggestions render behind the map below. */}
+      <div className="relative z-[1000]">
         <input
           type="text"
           value={query || address}
           onChange={(e) => {
-            // When the user starts typing, treat it as a new search.
             setQuery(e.target.value)
-            // We keep `address` in sync so the picker still reports a
-            // value to the parent if they submit without picking a
-            // suggestion (manual entry is allowed).
             setAddress(e.target.value)
             onChange?.({
               lat: position[0],
@@ -210,10 +195,7 @@ export default function LocationPicker({
             })
           }}
           onFocus={() => setShowResults(results.length > 0)}
-          onBlur={() => {
-            // Delay so a click on a result item registers first.
-            setTimeout(() => setShowResults(false), 120)
-          }}
+          onBlur={() => setTimeout(() => setShowResults(false), 150)}
           placeholder="Type an address, then pick from the list…"
           required={required}
           className={`block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 ${ring}`}
@@ -225,7 +207,7 @@ export default function LocationPicker({
         )}
 
         {showResults && results.length > 0 && (
-          <ul className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+          <ul className="absolute left-0 right-0 z-[1000] mt-1 max-h-60 overflow-auto rounded-lg border border-slate-200 bg-white shadow-xl">
             {results.map((r) => (
               <li key={r.place_id}>
                 <button
@@ -242,22 +224,20 @@ export default function LocationPicker({
         )}
       </div>
 
-      {searchError && (
-        <p className="text-xs text-rose-600">{searchError}</p>
-      )}
+      {searchError && <p className="text-xs text-rose-600">{searchError}</p>}
 
       <div className="overflow-hidden rounded-xl border border-slate-200">
         <MapContainer
           center={position}
-          zoom={14}
+          zoom={13}
           style={{ height: '300px', width: '100%' }}
           scrollWheelZoom
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{y}/{x}.png"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <MapPanner position={position} zoom={14} />
+          <MapPanner position={position} zoom={13} />
           <Marker
             position={position}
             draggable
@@ -267,7 +247,8 @@ export default function LocationPicker({
       </div>
 
       <p className="text-[11px] text-slate-500">
-        Drag the pin to fine-tune the exact clinic location. Coordinates:{' '}
+        Search for your clinic above, then drag the pin to the exact spot.
+        Coordinates:{' '}
         <span className="font-mono">
           {position[0].toFixed(5)}, {position[1].toFixed(5)}
         </span>

@@ -19,6 +19,7 @@ const authRoutes = require("./routes/auth.routes");
 const notesRoutes = require("./routes/notes.routes");
 const adminRoutes = require("./routes/admin.routes");
 const triageRoutes = require("./routes/triage.routes");
+const geocodeRoutes = require("./routes/geocode.routes");
 
 // === Global middleware ===
 app.use(helmet());
@@ -94,6 +95,7 @@ app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/notes", notesRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/triage", triageRoutes);
+app.use("/api/geocode", geocodeRoutes);
 
 // === 404 + error handlers ===
 app.use((req, res) => {
