@@ -2,9 +2,13 @@ const supabase = require("../config/supabase");
 
 const getAllDoctors = async (req, res) => {
   try {
+    // Join the owning user so the list carries the doctor's name/email.
+    // Doctor names are already public to patients via /doctors/nearby, so
+    // this exposes nothing new — it just lets the UI show a person instead
+    // of a raw UUID. The nested fields are flattened onto each doctor row.
     const { data, error } = await supabase
       .from("doctors")
-      .select("*");
+      .select("*, users!doctors_user_id_fkey(full_name, email)");
 
     if (error) {
       return res.status(500).json({
@@ -13,9 +17,15 @@ const getAllDoctors = async (req, res) => {
       });
     }
 
+    const doctors = (data || []).map(({ users, ...doctor }) => ({
+      ...doctor,
+      full_name: users?.full_name ?? null,
+      email: users?.email ?? null,
+    }));
+
     return res.status(200).json({
       message: "Doctors fetched successfully",
-      doctors: data,
+      doctors,
     });
   } catch (err) {
     return res.status(500).json({

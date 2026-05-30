@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../lib/api'
-import { StatusBadge } from '../../components/ui'
+import { StatusBadge, Person } from '../../components/ui'
 
 const TZ = 'Africa/Tunis'
 
@@ -26,6 +26,8 @@ function formatDateTime(iso) {
 
 export default function AdminAppointments() {
   const [appointments, setAppointments] = useState([])
+  const [patientsById, setPatientsById] = useState({})
+  const [doctorsById, setDoctorsById] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [statusFilter, setStatusFilter] = useState('all')
@@ -33,10 +35,23 @@ export default function AdminAppointments() {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    api
-      .get('/appointments')
-      .then(({ data }) => {
-        if (!cancelled) setAppointments(data.appointments || [])
+    // Appointments only carry IDs, so resolve patient/doctor names from the
+    // admin-only /patients and /doctors lists (id → person maps).
+    Promise.all([
+      api.get('/appointments'),
+      api.get('/patients'),
+      api.get('/doctors'),
+    ])
+      .then(([appts, patients, doctors]) => {
+        if (cancelled) return
+        setAppointments(appts.data.appointments || [])
+        const pMap = {}
+        for (const p of patients.data.patients || patients.data.users || [])
+          pMap[p.id] = p
+        setPatientsById(pMap)
+        const dMap = {}
+        for (const d of doctors.data.doctors || []) dMap[d.id] = d
+        setDoctorsById(dMap)
       })
       .catch((err) => {
         if (!cancelled)
@@ -127,11 +142,24 @@ export default function AdminAppointments() {
                   <td className="px-4 py-3 text-slate-700">
                     {formatDateTime(a.start_time)}
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">
-                    #{(a.patient_id || '').slice(0, 8)}
+                  <td className="px-4 py-3">
+                    <Person
+                      id={a.patient_id}
+                      name={patientsById[a.patient_id]?.full_name}
+                      sub={patientsById[a.patient_id]?.email}
+                    />
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">
-                    #{(a.doctor_id || '').slice(0, 8)}
+                  <td className="px-4 py-3">
+                    {(() => {
+                      const d = doctorsById[a.doctor_id]
+                      return (
+                        <Person
+                          id={a.doctor_id}
+                          name={d?.full_name ? `Dr. ${d.full_name}` : undefined}
+                          sub={d?.specialty}
+                        />
+                      )
+                    })()}
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge status={a.status} />

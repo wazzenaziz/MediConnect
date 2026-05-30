@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
 import { useConfirm } from '../../context/ConfirmContext'
 import LocationPicker from '../../components/LocationPicker'
+import { Button, Person } from '../../components/ui'
 
 const SPECIALTIES = [
   'General Practitioner',
@@ -329,38 +330,47 @@ export default function AdminDoctors() {
           No doctors yet. Onboard one above to get started.
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-card">
+          <table className="min-w-full divide-y divide-ink-200 text-sm">
+            <thead className="bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
               <tr>
+                <th className="px-4 py-3 text-left">Doctor</th>
                 <th className="px-4 py-3 text-left">Specialty</th>
                 <th className="px-4 py-3 text-left">Clinic</th>
                 <th className="px-4 py-3 text-left">Coordinates</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-ink-150">
               {doctors.map((d) => (
                 <tr key={d.id}>
-                  <td className="px-4 py-3 font-medium text-slate-900">
+                  <td className="px-4 py-3">
+                    <Person
+                      id={d.id}
+                      name={d.full_name ? `Dr. ${d.full_name}` : undefined}
+                      sub={d.email}
+                    />
+                  </td>
+                  <td className="px-4 py-3 font-medium text-ink-900">
                     {d.specialty || '—'}
                   </td>
-                  <td className="px-4 py-3 text-slate-700">
+                  <td className="px-4 py-3 text-ink-700">
                     {d.clinic_address || '—'}
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">
+                  <td className="px-4 py-3 font-mono text-xs text-ink-500">
                     {d.latitude && d.longitude
                       ? `${Number(d.latitude).toFixed(4)}, ${Number(d.longitude).toFixed(4)}`
                       : '—'}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
+                    <Button
+                      variant="danger"
+                      size="sm"
                       onClick={() => handleDelete(d)}
                       disabled={deletingId === d.id}
-                      className="rounded-md border border-rose-200 bg-white px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                     >
                       {deletingId === d.id ? 'Deleting…' : 'Delete'}
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}

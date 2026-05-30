@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
 import { api } from '../lib/api'
 import { Home, Calendar, CalendarClock, FileText, User } from 'lucide-react'
-import { StatusBadge } from '../components/ui'
+import { StatusBadge, Person } from '../components/ui'
 
 const TZ = 'Africa/Tunis'
 
@@ -39,6 +39,7 @@ function DoctorHome() {
   const firstName = user?.full_name?.split(' ')[0]
   const [doctorId, setDoctorId] = useState(null)
   const [todays, setTodays] = useState([])
+  const [patientsById, setPatientsById] = useState({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -72,6 +73,21 @@ function DoctorHome() {
       })
       list.sort((a, b) => asUtcDate(a.start_time) - asUtcDate(b.start_time))
       setTodays(list)
+
+      // Appointments only carry patient_id. Resolve the names for today's
+      // patients (small N) so the widget shows a person, not a UUID.
+      const ids = [...new Set(list.map((a) => a.patient_id).filter(Boolean))]
+      const results = await Promise.all(
+        ids.map((id) =>
+          api
+            .get(`/patients/${id}`)
+            .then(({ data }) => data.patient)
+            .catch(() => null),
+        ),
+      )
+      const map = {}
+      for (const p of results) if (p) map[p.id] = p
+      setPatientsById(map)
     } catch {
       // Non-fatal; widget just stays empty.
     } finally {
@@ -159,20 +175,17 @@ function DoctorHome() {
             .
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-slate-100">
+          <ul className="mt-3 divide-y divide-ink-150">
             {todays.map((a) => (
               <li
                 key={a.id}
-                className="flex items-center justify-between py-3"
+                className="flex items-center justify-between gap-3 py-3"
               >
-                <div>
-                  <p className="text-sm font-medium text-slate-900">
-                    {formatTime(a.start_time)} – {formatTime(a.end_time)}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Patient #{a.patient_id.slice(0, 8)}
-                  </p>
-                </div>
+                <Person
+                  id={a.patient_id}
+                  name={patientsById[a.patient_id]?.full_name}
+                  sub={`${formatTime(a.start_time)} – ${formatTime(a.end_time)}`}
+                />
                 <StatusBadge status={a.status} />
               </li>
             ))}
