@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '../../lib/api'
 import { useConfirm } from '../../context/ConfirmContext'
 import LocationPicker from '../../components/LocationPicker'
-import { Stethoscope } from 'lucide-react'
+import { Stethoscope, Search } from 'lucide-react'
 import { Button, Person, Card, SkeletonRows, EmptyState } from '../../components/ui'
+
+const PAGE_SIZE = 25
 
 const SPECIALTIES = [
   'General Practitioner',
@@ -41,6 +43,9 @@ export default function AdminDoctors() {
   const [error, setError] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [actionError, setActionError] = useState(null)
+  const [query, setQuery] = useState('')
+  const [specialtyFilter, setSpecialtyFilter] = useState('all')
+  const [page, setPage] = useState(1)
 
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(BLANK_FORM)
@@ -127,43 +132,69 @@ export default function AdminDoctors() {
     }
   }
 
+  // Filter by name/email/specialty + specialty dropdown, sort by name,
+  // then paginate.
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    const list = doctors.filter((d) => {
+      if (specialtyFilter !== 'all' && d.specialty !== specialtyFilter)
+        return false
+      if (!q) return true
+      return (
+        (d.full_name || '').toLowerCase().includes(q) ||
+        (d.email || '').toLowerCase().includes(q) ||
+        (d.specialty || '').toLowerCase().includes(q)
+      )
+    })
+    return [...list].sort((a, b) =>
+      (a.full_name || '').localeCompare(b.full_name || ''),
+    )
+  }, [doctors, query, specialtyFilter])
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, pageCount)
+  const pageRows = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  )
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
             Admin
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-900">Doctors</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="mt-1 text-2xl font-bold text-ink-900">Doctors</h1>
+          <p className="mt-1 text-sm text-ink-500">
             {doctors.length} doctor{doctors.length === 1 ? '' : 's'} on the
             platform.
           </p>
         </div>
-        <button
+        <Button
+          variant={showForm ? 'secondary' : 'primary'}
           onClick={() => {
             setShowForm((v) => !v)
             setSubmitError(null)
             setSubmitSuccess(null)
           }}
-          className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700"
         >
           {showForm ? 'Close form' : '+ Onboard new doctor'}
-        </button>
+        </Button>
       </div>
 
       {submitSuccess && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-          ✓ {submitSuccess}
+        <div className="rounded-md border border-success-bd bg-success-bg px-3 py-2 text-sm text-success">
+          {submitSuccess}
         </div>
       )}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-md border border-danger-bd bg-danger-bg px-3 py-2 text-sm text-danger">
           {error}
         </div>
       )}
       {actionError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div className="rounded-md border border-danger-bd bg-danger-bg px-3 py-2 text-sm text-danger">
           {actionError}
         </div>
       )}
@@ -333,53 +364,130 @@ export default function AdminDoctors() {
           hint="Onboard your first doctor using the form above."
         />
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-card">
-          <table className="min-w-full divide-y divide-ink-200 text-sm">
-            <thead className="bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
-              <tr>
-                <th className="px-4 py-3 text-left">Doctor</th>
-                <th className="px-4 py-3 text-left">Specialty</th>
-                <th className="px-4 py-3 text-left">Clinic</th>
-                <th className="px-4 py-3 text-left">Coordinates</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ink-150">
-              {doctors.map((d) => (
-                <tr key={d.id}>
-                  <td className="px-4 py-3">
-                    <Person
-                      id={d.id}
-                      name={d.full_name ? `Dr. ${d.full_name}` : undefined}
-                      sub={d.email}
-                    />
-                  </td>
-                  <td className="px-4 py-3 font-medium text-ink-900">
-                    {d.specialty || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-ink-700">
-                    {d.clinic_address || '—'}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-ink-500">
-                    {d.latitude && d.longitude
-                      ? `${Number(d.latitude).toFixed(4)}, ${Number(d.longitude).toFixed(4)}`
-                      : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      onClick={() => handleDelete(d)}
-                      disabled={deletingId === d.id}
-                    >
-                      {deletingId === d.id ? 'Deleting…' : 'Delete'}
-                    </Button>
-                  </td>
-                </tr>
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative max-w-sm flex-1">
+              <Search
+                size={16}
+                strokeWidth={1.8}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  setPage(1)
+                }}
+                placeholder="Search by name, email, or specialty"
+                className="w-full rounded-md border border-ink-300 py-2.5 pl-9 pr-3 text-sm text-ink-900"
+              />
+            </div>
+            <select
+              value={specialtyFilter}
+              onChange={(e) => {
+                setSpecialtyFilter(e.target.value)
+                setPage(1)
+              }}
+              className="rounded-md border border-ink-300 px-3 py-2.5 text-sm text-ink-900"
+            >
+              <option value="all">All specialties</option>
+              {SPECIALTIES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </select>
+          </div>
+
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon={<Search size={40} strokeWidth={1.5} />}
+              title="No doctors match your filters"
+              hint="Try a different search term or specialty."
+            />
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-card">
+              <table className="min-w-full divide-y divide-ink-200 text-sm">
+                <thead className="bg-ink-50 text-xs uppercase tracking-wide text-ink-500">
+                  <tr>
+                    <th className="px-4 py-3 text-left">Doctor</th>
+                    <th className="px-4 py-3 text-left">Specialty</th>
+                    <th className="px-4 py-3 text-left">Clinic</th>
+                    <th className="px-4 py-3 text-left">Coordinates</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-ink-150">
+                  {pageRows.map((d) => (
+                    <tr key={d.id}>
+                      <td className="px-4 py-3">
+                        <Person
+                          id={d.id}
+                          name={d.full_name ? `Dr. ${d.full_name}` : undefined}
+                          sub={d.email}
+                        />
+                      </td>
+                      <td className="px-4 py-3 font-medium text-ink-900">
+                        {d.specialty || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-ink-700">
+                        {d.clinic_address || '—'}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-ink-500">
+                        {d.latitude && d.longitude
+                          ? `${Number(d.latitude).toFixed(4)}, ${Number(d.longitude).toFixed(4)}`
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleDelete(d)}
+                          disabled={deletingId === d.id}
+                        >
+                          {deletingId === d.id ? 'Deleting…' : 'Delete'}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {pageCount > 1 && (
+            <div className="flex items-center justify-between text-sm text-ink-600">
+              <span>
+                Showing {(currentPage - 1) * PAGE_SIZE + 1}–
+                {Math.min(currentPage * PAGE_SIZE, filtered.length)} of{' '}
+                {filtered.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Previous
+                </Button>
+                <span className="tabular-nums">
+                  {currentPage} / {pageCount}
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={currentPage >= pageCount}
+                  onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
