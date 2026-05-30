@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Stethoscope, MapPin, Calendar } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 const actions = [
@@ -8,21 +9,21 @@ const actions = [
     description:
       'Tell our AI assistant what you’re feeling and get a specialty suggestion.',
     cta: 'Start triage',
-    icon: '🩺',
+    icon: Stethoscope,
   },
   {
     to: '/patient/doctors',
     title: 'Find nearby doctors',
     description: 'Browse specialists close to you and see their available slots.',
     cta: 'Search doctors',
-    icon: '📍',
+    icon: MapPin,
   },
   {
     to: '/patient/appointments',
     title: 'My appointments',
     description: 'Review upcoming visits, past consultations, and any notes.',
     cta: 'View appointments',
-    icon: '📅',
+    icon: Calendar,
   },
 ]
 
@@ -51,9 +52,7 @@ export default function PatientHome() {
             to={action.to}
             className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-sky-300 hover:shadow-md"
           >
-            <span className="text-3xl" aria-hidden="true">
-              {action.icon}
-            </span>
+            <action.icon size={28} strokeWidth={1.8} className="text-brand-600" aria-hidden="true" />
             <h2 className="mt-4 text-lg font-semibold text-slate-900">
               {action.title}
             </h2>

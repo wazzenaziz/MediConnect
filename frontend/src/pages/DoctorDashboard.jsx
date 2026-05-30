@@ -8,6 +8,7 @@ import DoctorProfilePage from './doctor/Profile'
 import { useAuth } from '../context/AuthContext'
 import { useSocket } from '../context/SocketContext'
 import { api } from '../lib/api'
+import { Home, Calendar, CalendarClock, FileText, User } from 'lucide-react'
 
 const TZ = 'Africa/Tunis'
 
@@ -192,11 +193,11 @@ function DoctorHome() {
 }
 
 const navItems = [
-  { to: '/doctor', label: 'Home', icon: '🏠', end: true },
-  { to: '/doctor/schedule', label: 'Schedule', icon: '📅' },
-  { to: '/doctor/appointments', label: 'Appointments', icon: '👥' },
-  { to: '/doctor/notes', label: 'Consultation notes', icon: '📝' },
-  { to: '/doctor/profile', label: 'Profile', icon: '👤' },
+  { to: '/doctor', label: 'Home', icon: Home, end: true },
+  { to: '/doctor/schedule', label: 'Schedule', icon: Calendar },
+  { to: '/doctor/appointments', label: 'Appointments', icon: CalendarClock },
+  { to: '/doctor/notes', label: 'Consultation notes', icon: FileText },
+  { to: '/doctor/profile', label: 'Profile', icon: User },
 ]
 
 export default function DoctorDashboard() {

@@ -4,12 +4,13 @@ import AdminHome from './admin/AdminHome'
 import AdminPatients from './admin/Patients'
 import AdminDoctors from './admin/Doctors'
 import AdminAppointments from './admin/Appointments'
+import { LayoutDashboard, Users, Stethoscope, Calendar } from 'lucide-react'
 
 const navItems = [
-  { to: '/admin', label: 'Overview', icon: '📊', end: true },
-  { to: '/admin/patients', label: 'Patients', icon: '🧑' },
-  { to: '/admin/doctors', label: 'Doctors', icon: '🩺' },
-  { to: '/admin/appointments', label: 'Appointments', icon: '📅' },
+  { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/admin/patients', label: 'Patients', icon: Users },
+  { to: '/admin/doctors', label: 'Doctors', icon: Stethoscope },
+  { to: '/admin/appointments', label: 'Appointments', icon: Calendar },
 ]
 
 export default function AdminDashboard() {

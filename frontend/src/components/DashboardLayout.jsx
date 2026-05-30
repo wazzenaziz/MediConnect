@@ -47,9 +47,7 @@ export default function DashboardLayout({ accent = 'sky', roleLabel, navItems })
                 }`
               }
             >
-              <span aria-hidden="true" className="text-base">
-                {item.icon}
-              </span>
+              <item.icon size={18} strokeWidth={1.8} aria-hidden="true" />
               <span>{item.label}</span>
             </NavLink>
           ))}

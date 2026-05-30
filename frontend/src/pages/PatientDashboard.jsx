@@ -6,13 +6,14 @@ import Doctors from './patient/Doctors'
 import DoctorProfile from './patient/DoctorProfile'
 import Appointments from './patient/Appointments'
 import PatientProfile from './patient/Profile'
+import { Home, Stethoscope, MapPin, Calendar, User } from 'lucide-react'
 
 const navItems = [
-  { to: '/patient', label: 'Home', icon: '🏠', end: true },
-  { to: '/patient/triage', label: 'Triage', icon: '🩺' },
-  { to: '/patient/doctors', label: 'Find doctors', icon: '📍' },
-  { to: '/patient/appointments', label: 'Appointments', icon: '📅' },
-  { to: '/patient/profile', label: 'Profile', icon: '👤' },
+  { to: '/patient', label: 'Home', icon: Home, end: true },
+  { to: '/patient/triage', label: 'Triage', icon: Stethoscope },
+  { to: '/patient/doctors', label: 'Find doctors', icon: MapPin },
+  { to: '/patient/appointments', label: 'Appointments', icon: Calendar },
+  { to: '/patient/profile', label: 'Profile', icon: User },
 ]
 
 export default function PatientDashboard() {
