@@ -1,19 +1,128 @@
+/* ============================================================
+   MediConnect — index.css  (DROP-IN REPLACEMENT)
+   Stack: Tailwind CSS v4 + Vite + React 19
+   Replaces: frontend/src/index.css
+   ------------------------------------------------------------
+   In Tailwind v4 the @theme block IS the config — every token
+   below auto-generates utilities:
+     --color-brand-600  -> bg-brand-600  text-brand-600  border-brand-600
+     --radius-lg        -> rounded-lg
+     --shadow-card      -> shadow-card
+     --font-sans        -> font-sans
+   So after pasting this, you restyle components with normal
+   Tailwind classes (e.g. className="bg-brand-600"), no JS needed.
+   ============================================================ */
+
+/* Fonts first — @import rules must precede everything else. */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
-:root {
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", Arial, sans-serif;
-  color-scheme: light;
+@theme {
+  /* ---- Brand: Care Blue (primary / patient) ---- */
+  --color-brand-50:  #eef4ff;
+  --color-brand-100: #dbe7ff;
+  --color-brand-200: #bcd2ff;
+  --color-brand-300: #8db3ff;
+  --color-brand-400: #5a8df8;
+  --color-brand-500: #2e6bf0;
+  --color-brand-600: #1b54d6;  /* primary */
+  --color-brand-700: #1742ad;
+  --color-brand-800: #173a8b;
+  --color-brand-900: #16336f;
+
+  /* ---- Healing Teal (secondary / doctor) ---- */
+  --color-teal-50:  #e9faf7;
+  --color-teal-100: #c7f2ea;
+  --color-teal-400: #2bb6a3;
+  --color-teal-500: #119e8b;
+  --color-teal-600: #0d8276;
+  --color-teal-700: #0c6960;
+
+  /* ---- Warm Coral (human accent — use sparingly) ---- */
+  --color-coral-50:  #fff1ee;
+  --color-coral-400: #ff7a66;
+  --color-coral-500: #fa5d44;
+  --color-coral-600: #e8442c;
+
+  /* ---- Indigo (admin) ---- */
+  --color-indigo-50:  #f1eefe;
+  --color-indigo-100: #e4ddfd;
+  --color-indigo-500: #6d4fe0;
+  --color-indigo-600: #5a37d6;
+  --color-indigo-700: #4a2cb3;
+
+  /* ---- Ink / neutral (text, borders, surfaces) ---- */
+  --color-ink-50:  #f6f9fc;
+  --color-ink-100: #eff3f8;
+  --color-ink-150: #eaeff5;
+  --color-ink-200: #e3e9f0;
+  --color-ink-300: #cbd5e1;
+  --color-ink-400: #94a3b4;
+  --color-ink-500: #6b7c93;
+  --color-ink-600: #51637a;
+  --color-ink-700: #324155;
+  --color-ink-800: #1b2638;
+  --color-ink-900: #0e1726;
+
+  /* ---- Semantic (status) ---- */
+  --color-success: #0e9f6e;  --color-success-bg: #e8f8f1;  --color-success-bd: #bdebd6;
+  --color-warning: #d9920a;  --color-warning-bg: #fdf4e3;  --color-warning-bd: #f6e0ad;
+  --color-danger:  #e11d48;  --color-danger-bg:  #fdeef1;  --color-danger-bd:  #f7cdd6;
+
+  /* ---- Typography ---- */
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* ---- Radius ---- */
+  --radius-sm:  8px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  18px;
+  --radius-2xl: 24px;
+
+  /* ---- Elevation ---- */
+  --shadow-xs:   0 1px 2px rgba(14,23,38,.06);
+  --shadow-card: 0 1px 3px rgba(14,23,38,.08), 0 1px 2px rgba(14,23,38,.04);
+  --shadow-md:   0 6px 16px -4px rgba(14,23,38,.12);
+  --shadow-lg:   0 18px 40px -12px rgba(14,23,38,.20);
 }
 
-html,
-body,
-#root {
-  height: 100%;
-}
+/* ============================================================
+   Base layer
+   ============================================================ */
+:root { color-scheme: light; }
+
+html, body, #root { height: 100%; }
 
 body {
   margin: 0;
-  background-color: #f8fafc;
-  color: #0f172a;
+  font-family: var(--font-sans);
+  background-color: var(--color-ink-50);
+  color: var(--color-ink-700);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Headings inherit the brand ink + tight tracking by default. */
+h1, h2, h3, h4 { color: var(--color-ink-900); letter-spacing: -0.02em; }
+
+/* One consistent focus ring across the whole app. */
+:where(button, a, input, select, textarea):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(46, 107, 240, .18);
+  border-color: var(--color-brand-500);
+}
+
+::selection { background: var(--color-brand-200); color: var(--color-ink-900); }
+
+/* Skeleton shimmer (used by <Skeleton/> primitive) */
+@keyframes mc-shimmer { 100% { background-position: -200% 0; } }
+.mc-skeleton {
+  background: linear-gradient(90deg, var(--color-ink-150) 25%, var(--color-ink-100) 37%, var(--color-ink-150) 63%);
+  background-size: 200% 100%;
+  animation: mc-shimmer 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mc-skeleton { animation: none; }
+  html { scroll-behavior: auto; }
 }
