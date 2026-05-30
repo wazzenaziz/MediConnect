@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../lib/api'
+import { Button } from '../../components/ui'
 
 const EXAMPLES = [
   'I have a red itchy rash on my forearm that started two days ago',
@@ -64,13 +65,13 @@ export default function Triage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-sky-600">
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
           AI Triage
         </p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-900">
+        <h1 className="mt-1 text-2xl font-bold text-ink-900">
           Describe your symptoms
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-ink-500">
           Our AI assistant will suggest the type of specialist most relevant to your
           situation. This is not a medical diagnosis.
         </p>
@@ -78,11 +79,11 @@ export default function Triage() {
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-2xl bg-white p-6 shadow-sm"
+        className="rounded-2xl bg-white p-6 shadow-card"
       >
         <label
           htmlFor="symptoms"
-          className="block text-sm font-medium text-slate-700"
+          className="block text-sm font-medium text-ink-700"
         >
           What are you experiencing?
         </label>
@@ -94,16 +95,16 @@ export default function Triage() {
           disabled={loading}
           maxLength={1000}
           placeholder="Example: I’ve had a persistent cough for three weeks and chest discomfort when breathing deeply…"
-          className="mt-2 block w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-slate-900 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200 disabled:bg-slate-50"
+          className="mt-2 block w-full resize-none rounded-md border border-ink-300 px-3 py-2.5 text-ink-900 disabled:bg-ink-50"
         />
-        <div className="mt-1 flex justify-between text-xs text-slate-400">
+        <div className="mt-1 flex justify-between text-xs text-ink-400">
           <span>{symptoms.length}/1000</span>
           <span>Be as specific as you can — duration, location, severity</span>
         </div>
 
         {!result && (
           <div className="mt-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            <p className="text-xs font-medium uppercase tracking-wide text-ink-400">
               Or try an example
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -113,7 +114,7 @@ export default function Triage() {
                   type="button"
                   onClick={() => setSymptoms(ex)}
                   disabled={loading}
-                  className="rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-full border border-ink-200 px-3 py-1 text-xs text-ink-600 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {ex.length > 50 ? `${ex.slice(0, 50)}…` : ex}
                 </button>
@@ -125,48 +126,49 @@ export default function Triage() {
         {error && (
           <div
             role="alert"
-            className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+            className="mt-4 rounded-md border border-danger-bd bg-danger-bg px-3 py-2 text-sm text-danger"
           >
             {error}
           </div>
         )}
 
         <div className="mt-5 flex gap-2">
-          <button
+          <Button
             type="submit"
+            variant="coral"
             disabled={loading || symptoms.trim().length < 5}
-            className="flex-1 rounded-lg bg-sky-600 px-4 py-2.5 font-medium text-white shadow-sm hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex-1"
           >
             {loading ? 'Analyzing…' : 'Get suggestion'}
-          </button>
+          </Button>
           {(result || error) && (
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={reset}
               disabled={loading}
-              className="rounded-lg border border-slate-300 px-4 py-2.5 font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Reset
-            </button>
+            </Button>
           )}
         </div>
       </form>
 
       {result && (
-        <div className="rounded-2xl border border-sky-200 bg-sky-50/50 p-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">
+        <div className="rounded-2xl border border-brand-200 bg-brand-50/50 p-6">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
             Suggested specialist
           </p>
-          <h2 className="mt-1 text-3xl font-bold text-slate-900">
+          <h2 className="mt-1 text-3xl font-bold text-ink-900">
             {result.specialty}
           </h2>
 
           <div className="mt-4">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-medium text-slate-600">
+              <span className="font-medium text-ink-600">
                 {confidenceLabel(result.confidence)}
               </span>
-              <span className="font-semibold text-slate-700">
+              <span className="font-semibold text-ink-700">
                 {confidencePct}%
               </span>
             </div>
@@ -185,10 +187,10 @@ export default function Triage() {
           </div>
 
           <div className="mt-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
               Why this specialty
             </p>
-            <p className="mt-1 text-sm leading-relaxed text-slate-700">
+            <p className="mt-1 text-sm leading-relaxed text-ink-700">
               {result.reasoning}
             </p>
           </div>
@@ -196,17 +198,13 @@ export default function Triage() {
           <div className="mt-6 flex flex-wrap gap-2">
             <Link
               to={`/patient/doctors?specialty=${encodeURIComponent(result.specialty)}`}
-              className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-sky-700"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-brand-600 px-[18px] py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-brand-700"
             >
               Find {result.specialty}s near me →
             </Link>
-            <button
-              type="button"
-              onClick={reset}
-              className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+            <Button type="button" variant="secondary" onClick={reset}>
               Ask again
-            </button>
+            </Button>
           </div>
 
           <p className="mt-5 text-xs text-slate-500">
