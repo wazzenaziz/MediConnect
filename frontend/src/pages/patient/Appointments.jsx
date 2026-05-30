@@ -45,6 +45,8 @@ export default function Appointments() {
   const { user } = useAuth()
   const [appointments, setAppointments] = useState([])
   const [doctorsById, setDoctorsById] = useState({})
+  // Indexed by appointment_id so completed cards can show their note inline.
+  const [notesByAppt, setNotesByAppt] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [cancellingId, setCancellingId] = useState(null)
@@ -76,6 +78,23 @@ export default function Appointments() {
         if (d) map[d.id] = d
       }
       setDoctorsById(map)
+
+      // Pull all of this patient's notes in one request. The backend's
+      // RLS-style check restricts the result to notes whose patient_id
+      // matches the logged-in user, so this is safe even without query
+      // filters here. Empty list is the common case.
+      try {
+        const { data: notesData } = await api.get(`/notes/patient/${user.id}`)
+        const notes = notesData.notes || notesData.note || []
+        const byAppt = {}
+        for (const n of Array.isArray(notes) ? notes : [notes]) {
+          if (n?.appointment_id) byAppt[n.appointment_id] = n
+        }
+        setNotesByAppt(byAppt)
+      } catch {
+        // Notes are non-critical for the appointments view — swallow.
+        setNotesByAppt({})
+      }
     } catch (err) {
       setError(
         err.response?.data?.message || 'Could not load your appointments.',
@@ -201,6 +220,68 @@ export default function Appointments() {
         {doctor?.clinic_address && (
           <p className="mt-1 text-xs text-slate-500">
             📍 {doctor.clinic_address}
+          </p>
+        )}
+
+        {appt.status === 'completed' && notesByAppt[appt.id] && (
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/40 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              Doctor’s note
+            </p>
+            <dl className="mt-2 space-y-2 text-sm">
+              {notesByAppt[appt.id].diagnosis && (
+                <div>
+                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                    Diagnosis
+                  </dt>
+                  <dd className="text-slate-800">
+                    {notesByAppt[appt.id].diagnosis}
+                  </dd>
+                </div>
+              )}
+              {notesByAppt[appt.id].prescription && (
+                <div>
+                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                    Prescription
+                  </dt>
+                  <dd className="whitespace-pre-wrap text-slate-800">
+                    {notesByAppt[appt.id].prescription}
+                  </dd>
+                </div>
+              )}
+              {notesByAppt[appt.id].note_text && (
+                <div>
+                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                    Notes
+                  </dt>
+                  <dd className="whitespace-pre-wrap text-slate-800">
+                    {notesByAppt[appt.id].note_text}
+                  </dd>
+                </div>
+              )}
+              {notesByAppt[appt.id].follow_up_date && (
+                <div>
+                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                    Follow-up
+                  </dt>
+                  <dd className="text-slate-800">
+                    {new Date(
+                      notesByAppt[appt.id].follow_up_date,
+                    ).toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        )}
+
+        {appt.status === 'completed' && !notesByAppt[appt.id] && (
+          <p className="mt-3 text-xs italic text-slate-400">
+            Your doctor hasn’t written a note for this visit yet.
           </p>
         )}
 
