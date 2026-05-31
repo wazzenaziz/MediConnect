@@ -4,7 +4,9 @@ import { Users, Stethoscope } from 'lucide-react'
 import { api } from '../../lib/api'
 import { Card, StatusBadge, Skeleton } from '../../components/ui'
 
-// Prominent headline metric with a coloured left accent.
+// Prominent headline metric with a coloured LEFT accent only.
+// NOTE: use `border-l-<color>` (not `border-<color>`) so only the left
+// edge is tinted — `border-<color>` colours all four sides.
 function HeadlineStat({ label, value, loading, accent, icon }) {
   return (
     <Card className={`border-l-[3px] ${accent} p-5`}>
@@ -90,14 +92,14 @@ export default function AdminHome() {
           label="Patients"
           value={stats?.patientsCount}
           loading={loading}
-          accent="border-brand-600"
+          accent="border-l-brand-600"
           icon={<Users size={20} strokeWidth={1.8} className="text-brand-600" />}
         />
         <HeadlineStat
           label="Active doctors"
           value={stats?.doctorsCount}
           loading={loading}
-          accent="border-teal-600"
+          accent="border-l-teal-600"
           icon={<Stethoscope size={20} strokeWidth={1.8} className="text-teal-600" />}
         />
       </div>
@@ -116,29 +118,18 @@ export default function AdminHome() {
             </span>
           )}
         </div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <StatusTotal
-            status="pending"
-            value={stats?.pendingAppointments}
-            loading={loading}
-          />
-          <StatusTotal
-            status="confirmed"
-            value={stats?.confirmedAppointments}
-            loading={loading}
-          />
-          <StatusTotal
-            status="completed"
-            value={stats?.completedAppointments}
-            loading={loading}
-          />
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <StatusTotal status="pending" value={stats?.pendingAppointments} loading={loading} />
+          <StatusTotal status="confirmed" value={stats?.confirmedAppointments} loading={loading} />
+          <StatusTotal status="completed" value={stats?.completedAppointments} loading={loading} />
+          <StatusTotal status="cancelled" value={stats?.cancelledAppointments} loading={loading} />
         </div>
       </Card>
 
       <div className="grid gap-3 md:grid-cols-3">
         <Link
           to="/admin/patients"
-          className="rounded-2xl border border-ink-200 bg-white p-5 shadow-card transition hover:border-indigo-300 hover:shadow-md"
+          className="rounded-lg border border-ink-200 bg-white p-5 shadow-card transition hover:border-indigo-300 hover:shadow-md"
         >
           <p className="font-semibold text-ink-900">Manage patients →</p>
           <p className="mt-1 text-xs text-ink-500">
@@ -147,7 +138,7 @@ export default function AdminHome() {
         </Link>
         <Link
           to="/admin/doctors"
-          className="rounded-2xl border border-ink-200 bg-white p-5 shadow-card transition hover:border-indigo-300 hover:shadow-md"
+          className="rounded-lg border border-ink-200 bg-white p-5 shadow-card transition hover:border-indigo-300 hover:shadow-md"
         >
           <p className="font-semibold text-ink-900">Manage doctors →</p>
           <p className="mt-1 text-xs text-ink-500">
@@ -156,7 +147,7 @@ export default function AdminHome() {
         </Link>
         <Link
           to="/admin/appointments"
-          className="rounded-2xl border border-ink-200 bg-white p-5 shadow-card transition hover:border-indigo-300 hover:shadow-md"
+          className="rounded-lg border border-ink-200 bg-white p-5 shadow-card transition hover:border-indigo-300 hover:shadow-md"
         >
           <p className="font-semibold text-ink-900">All appointments →</p>
           <p className="mt-1 text-xs text-ink-500">

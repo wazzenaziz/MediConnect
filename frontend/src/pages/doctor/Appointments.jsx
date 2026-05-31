@@ -1,19 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CalendarClock } from 'lucide-react'
+import { CalendarClock, Calendar, Clock } from 'lucide-react'
 import { api } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { useSocket } from '../../context/SocketContext'
-import { Card, SkeletonRows, EmptyState } from '../../components/ui'
+import { Card, SkeletonRows, EmptyState, StatusBadge, Button } from '../../components/ui'
 
 const TZ = 'Africa/Tunis'
-
-const STATUS_STYLES = {
-  pending: 'bg-amber-50 text-amber-700 border-amber-200',
-  confirmed: 'bg-sky-50 text-sky-700 border-sky-200',
-  completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
-}
 
 function asUtcDate(iso) {
   if (!iso) return null
@@ -26,17 +19,9 @@ function formatDateTime(iso) {
   if (!d) return { date: '', time: '' }
   return {
     date: d.toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      timeZone: TZ,
+      weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: TZ,
     }),
-    time: d.toLocaleTimeString('en-GB', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: TZ,
-    }),
+    time: d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: TZ }),
   }
 }
 
@@ -51,7 +36,6 @@ export default function DoctorAppointments() {
   const [actionError, setActionError] = useState(null)
   const [busyId, setBusyId] = useState(null)
 
-  // Resolve the logged-in doctor's `doctors.id`.
   useEffect(() => {
     if (!user?.id) return
     let cancelled = false
@@ -64,14 +48,9 @@ export default function DoctorAppointments() {
         else setError('No doctor profile linked to your account.')
       })
       .catch((err) =>
-        setError(
-          err.response?.data?.message ||
-            'Could not load your doctor profile.',
-        ),
+        setError(err.response?.data?.message || 'Could not load your doctor profile.'),
       )
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [user?.id])
 
   const load = useCallback(async () => {
@@ -86,21 +65,14 @@ export default function DoctorAppointments() {
       const patientIds = [...new Set(list.map((a) => a.patient_id))]
       const fetched = await Promise.all(
         patientIds.map((pid) =>
-          api
-            .get(`/patients/${pid}`)
-            .then((r) => r.data.patient || r.data.user || null)
-            .catch(() => null),
+          api.get(`/patients/${pid}`).then((r) => r.data.patient || r.data.user || null).catch(() => null),
         ),
       )
       const map = {}
-      for (const p of fetched) {
-        if (p) map[p.id] = p
-      }
+      for (const p of fetched) if (p) map[p.id] = p
       setPatientsById(map)
     } catch (err) {
-      setError(
-        err.response?.data?.message || 'Could not load appointments.',
-      )
+      setError(err.response?.data?.message || 'Could not load appointments.')
     } finally {
       setLoading(false)
     }
@@ -110,7 +82,6 @@ export default function DoctorAppointments() {
     if (doctorId) load()
   }, [doctorId, load])
 
-  // Live refresh on any appointment event for this doctor.
   useEffect(() => {
     if (!socket) return
     const refresh = () => load()
@@ -127,9 +98,7 @@ export default function DoctorAppointments() {
     setActionError(null)
     try {
       await api.patch(`/appointments/${appt.id}/status`, { status })
-      setAppointments((prev) =>
-        prev.map((a) => (a.id === appt.id ? { ...a, status } : a)),
-      )
+      setAppointments((prev) => prev.map((a) => (a.id === appt.id ? { ...a, status } : a)))
     } catch (err) {
       setActionError(
         err.response?.data?.message ||
@@ -148,15 +117,10 @@ export default function DoctorAppointments() {
     for (const a of appointments) {
       const start = asUtcDate(a.start_time)
       const isPast =
-        !start ||
-        start < now ||
-        a.status === 'cancelled' ||
-        a.status === 'completed'
+        !start || start < now || a.status === 'cancelled' || a.status === 'completed'
       ;(isPast ? past : upcoming).push(a)
     }
-    upcoming.sort(
-      (a, b) => asUtcDate(a.start_time) - asUtcDate(b.start_time),
-    )
+    upcoming.sort((a, b) => asUtcDate(a.start_time) - asUtcDate(b.start_time))
     past.sort((a, b) => asUtcDate(b.start_time) - asUtcDate(a.start_time))
     return { upcoming, past }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,120 +135,84 @@ export default function DoctorAppointments() {
     const isActive = appt.status !== 'cancelled' && appt.status !== 'completed'
 
     return (
-      <div
-        key={appt.id}
-        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-      >
+      <Card key={appt.id} className="p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="font-semibold text-slate-900">
+            <p className="font-semibold text-ink-900">
               {patient?.full_name || `Patient #${appt.patient_id.slice(0, 8)}`}
             </p>
-            {patient?.email && (
-              <p className="text-xs text-slate-500">{patient.email}</p>
-            )}
+            {patient?.email && <p className="text-xs text-ink-500">{patient.email}</p>}
           </div>
-          <span
-            className={`rounded-full border px-2 py-0.5 text-xs font-medium capitalize ${
-              STATUS_STYLES[appt.status] || STATUS_STYLES.pending
-            }`}
-          >
-            {appt.status}
-          </span>
+          <StatusBadge status={appt.status} />
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-700">
-          <span>📅 {date}</span>
-          <span>
-            🕐 {time} – {endTime}
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-700">
+          <span className="inline-flex items-center gap-1.5">
+            <Calendar size={15} strokeWidth={1.8} className="text-ink-400" /> {date}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Clock size={15} strokeWidth={1.8} className="text-ink-400" /> {time} – {endTime}
           </span>
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
           {appt.status === 'pending' && (
-            <button
-              onClick={() => setStatus(appt, 'confirmed')}
-              disabled={busyId === appt.id}
-              className="rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-sky-700 disabled:opacity-50"
-            >
+            <Button size="sm" onClick={() => setStatus(appt, 'confirmed')} disabled={busyId === appt.id}>
               Confirm
-            </button>
+            </Button>
           )}
-          {appt.status === 'confirmed' && !isFutureOrToday && (
+          {appt.status === 'confirmed' && (
             <button
               onClick={() => setStatus(appt, 'completed')}
               disabled={busyId === appt.id}
-              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-            >
-              Mark completed
-            </button>
-          )}
-          {appt.status === 'confirmed' && isFutureOrToday && (
-            <button
-              onClick={() => setStatus(appt, 'completed')}
-              disabled={busyId === appt.id}
-              className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+              className={`inline-flex items-center justify-center rounded-md px-3 py-1.5 text-[13px] font-semibold transition disabled:opacity-50 ${
+                isFutureOrToday
+                  ? 'border border-success-bd bg-white text-success hover:bg-success-bg'
+                  : 'bg-success text-white hover:opacity-90'
+              }`}
             >
               Mark completed
             </button>
           )}
           {isActive && (
-            <button
-              onClick={() => setStatus(appt, 'cancelled')}
-              disabled={busyId === appt.id}
-              className="rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-            >
+            <Button variant="danger" size="sm" onClick={() => setStatus(appt, 'cancelled')} disabled={busyId === appt.id}>
               Cancel
-            </button>
+            </Button>
           )}
           {appt.status === 'completed' && (
-            <Link
-              to={`/doctor/notes?appointment=${appt.id}`}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            >
-              Write note →
+            <Link to={`/doctor/notes?appointment=${appt.id}`}>
+              <Button variant="secondary" size="sm">Write note →</Button>
             </Link>
           )}
         </div>
-      </div>
+      </Card>
     )
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
-          Doctor
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-slate-900">
-          Appointments
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Confirm bookings, mark visits complete, and review past
-          consultations.
+        <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">Doctor</p>
+        <h1 className="mt-1 text-2xl font-bold text-ink-900">Appointments</h1>
+        <p className="mt-1 text-sm text-ink-500">
+          Confirm bookings, mark visits complete, and review past consultations.
         </p>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </div>
+        <div className="rounded-md border border-danger-bd bg-danger-bg px-3 py-2 text-sm text-danger">{error}</div>
       )}
       {actionError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {actionError}
-        </div>
+        <div className="rounded-md border border-danger-bd bg-danger-bg px-3 py-2 text-sm text-danger">{actionError}</div>
       )}
 
       {loading ? (
-        <Card className="p-6">
-          <SkeletonRows rows={5} />
-        </Card>
+        <Card className="p-6"><SkeletonRows rows={5} /></Card>
       ) : appointments.length === 0 ? (
         <EmptyState
           icon={<CalendarClock size={40} strokeWidth={1.5} />}
           title="No appointments yet"
-          hint="They’ll appear here when patients book you."
+          hint="They&rsquo;ll appear here when patients book you."
         />
       ) : (
         <div className="space-y-8">
@@ -293,9 +221,10 @@ export default function DoctorAppointments() {
               Upcoming ({upcoming.length})
             </h2>
             {upcoming.length === 0 ? (
-              <div className="rounded-xl border border-ink-200 bg-white p-6 text-center text-sm text-ink-500">
-                No upcoming appointments.
-              </div>
+              <Card className="flex flex-col items-center gap-2 p-8 text-center">
+                <CalendarClock size={32} strokeWidth={1.5} className="text-ink-300" />
+                <p className="text-sm font-medium text-ink-600">No upcoming appointments</p>
+              </Card>
             ) : (
               <div className="space-y-3">{upcoming.map(renderCard)}</div>
             )}
@@ -303,8 +232,8 @@ export default function DoctorAppointments() {
 
           {past.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Past, completed & cancelled ({past.length})
+              <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-500">
+                Past, completed &amp; cancelled ({past.length})
               </h2>
               <div className="space-y-3">{past.map(renderCard)}</div>
             </section>
