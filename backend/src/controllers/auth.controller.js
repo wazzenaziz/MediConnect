@@ -1,4 +1,5 @@
 const supabase = require("../config/supabase");
+const { supabaseAuth } = require("../config/supabase");
 
 const login = async (req, res) => {
   try {
@@ -10,7 +11,9 @@ const login = async (req, res) => {
       });
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    // Use the dedicated auth client so the service_role `supabase` client below
+    // is never bound to this user's session (which would break RLS).
+    const { data, error } = await supabaseAuth.auth.signInWithPassword({
       email,
       password,
     });
@@ -59,7 +62,7 @@ const register = async (req, res) => {
       });
     }
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const { data: authData, error: authError } = await supabaseAuth.auth.signUp({
       email,
       password,
     });
