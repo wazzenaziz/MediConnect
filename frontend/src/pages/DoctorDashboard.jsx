@@ -121,7 +121,7 @@ function DoctorHome() {
   return (
     <div className="space-y-8">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+        <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">
           Dashboard
         </p>
         <h1 className="mt-1 text-3xl font-bold text-slate-900">
@@ -137,7 +137,7 @@ function DoctorHome() {
           { label: 'Today', value: stats.total, tone: 'bg-slate-100 text-slate-700' },
           { label: 'Pending', value: stats.pending, tone: 'bg-amber-50 text-amber-700' },
           { label: 'Confirmed', value: stats.confirmed, tone: 'bg-sky-50 text-sky-700' },
-          { label: 'Completed', value: stats.completed, tone: 'bg-emerald-50 text-emerald-700' },
+          { label: 'Completed', value: stats.completed, tone: 'bg-teal-50 text-teal-700' },
         ].map((s) => (
           <div
             key={s.label}
@@ -158,7 +158,7 @@ function DoctorHome() {
           </h2>
           <Link
             to="/doctor/appointments"
-            className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
+            className="text-xs font-medium text-teal-700 hover:text-teal-800"
           >
             See all →
           </Link>

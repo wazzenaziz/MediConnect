@@ -185,7 +185,7 @@ export default function Schedule() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">
             Doctor
           </p>
           <h1 className="mt-1 text-2xl font-bold text-slate-900">
@@ -199,7 +199,7 @@ export default function Schedule() {
         <button
           onClick={openCreate}
           disabled={!doctorId}
-          className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           + Add schedule
         </button>
@@ -220,7 +220,7 @@ export default function Schedule() {
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5 shadow-sm"
+          className="rounded-2xl border border-teal-200 bg-teal-50/40 p-5 shadow-sm"
         >
           <h2 className="text-sm font-semibold text-slate-900">
             {editingId ? 'Edit schedule' : 'New schedule'}
@@ -354,7 +354,7 @@ export default function Schedule() {
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
             >
               {submitting ? 'Saving…' : editingId ? 'Update' : 'Create'}
             </button>

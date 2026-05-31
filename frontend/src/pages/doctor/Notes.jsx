@@ -223,7 +223,7 @@ export default function DoctorNotes() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+        <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">
           Doctor
         </p>
         <h1 className="mt-1 text-2xl font-bold text-slate-900">
@@ -265,8 +265,8 @@ export default function DoctorNotes() {
                   onClick={() => selectAppointment(a.id)}
                   className={`w-full rounded-xl border p-3 text-left text-sm transition ${
                     isSelected
-                      ? 'border-emerald-400 bg-emerald-50/50 ring-2 ring-emerald-200'
-                      : 'border-slate-200 bg-white hover:border-emerald-300'
+                      ? 'border-teal-400 bg-teal-50/50 ring-2 ring-teal-200'
+                      : 'border-slate-200 bg-white hover:border-teal-300'
                   }`}
                 >
                   <p className="font-medium text-slate-900">
@@ -295,7 +295,7 @@ export default function DoctorNotes() {
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">
                     Note for
                   </p>
                   <p className="mt-1 font-semibold text-slate-900">
@@ -307,7 +307,7 @@ export default function DoctorNotes() {
                   </p>
                 </div>
                 {existingNote && (
-                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                  <span className="rounded-full border border-teal-200 bg-teal-50 px-2 py-0.5 text-xs font-medium text-teal-700">
                     Editing existing note
                   </span>
                 )}
@@ -387,7 +387,7 @@ export default function DoctorNotes() {
                 </div>
               )}
               {saveSuccess && (
-                <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <div className="mt-4 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-700">
                   ✓ {saveSuccess}
                 </div>
               )}
@@ -396,7 +396,7 @@ export default function DoctorNotes() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+                  className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-60"
                 >
                   {submitting
                     ? 'Saving…'

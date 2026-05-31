@@ -142,7 +142,7 @@ export default function DoctorProfile() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+        <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">
           Doctor
         </p>
         <h1 className="mt-1 text-2xl font-bold text-slate-900">
@@ -212,7 +212,7 @@ export default function DoctorProfile() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, specialty: e.target.value }))
                   }
-                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
                 >
                   {/* Keep an off-list value selectable so existing data
                       doesn't get silently overwritten. */}
@@ -263,7 +263,7 @@ export default function DoctorProfile() {
                     setForm((f) => ({ ...f, bio: e.target.value }))
                   }
                   placeholder="A short summary of your practice — experience, languages spoken, focus areas."
-                  className="mt-1 block w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+                  className="mt-1 block w-full resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-200"
                 />
                 <p className="mt-1 text-xs text-slate-400">
                   {form.bio.length}/1000
@@ -277,7 +277,7 @@ export default function DoctorProfile() {
               </div>
             )}
             {submitSuccess && (
-              <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              <div className="mt-4 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-700">
                 ✓ {submitSuccess}
               </div>
             )}
@@ -286,7 +286,7 @@ export default function DoctorProfile() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-lg bg-emerald-600 px-4 py-2.5 font-medium text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg bg-teal-600 px-4 py-2.5 font-medium text-white shadow-sm hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? 'Saving…' : 'Save changes'}
               </button>

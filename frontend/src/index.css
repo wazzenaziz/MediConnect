@@ -33,10 +33,13 @@
   /* ---- Healing Teal (secondary / doctor) ---- */
   --color-teal-50:  #e9faf7;
   --color-teal-100: #c7f2ea;
+  --color-teal-200: #9fe6d9;
+  --color-teal-300: #66d2c0;
   --color-teal-400: #2bb6a3;
   --color-teal-500: #119e8b;
   --color-teal-600: #0d8276;
   --color-teal-700: #0c6960;
+  --color-teal-800: #0a544d;
 
   /* ---- Warm Coral (human accent — use sparingly) ---- */
   --color-coral-50:  #fff1ee;
