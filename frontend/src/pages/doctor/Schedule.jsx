@@ -13,8 +13,19 @@ const DAYS = [
   'sunday',
 ]
 
+const DAY_LABELS = {
+  monday: 'Mon',
+  tuesday: 'Tue',
+  wednesday: 'Wed',
+  thursday: 'Thu',
+  friday: 'Fri',
+  saturday: 'Sat',
+  sunday: 'Sun',
+}
+
 const BLANK_FORM = {
-  day_of_week: 'monday',
+  // create mode picks one or more days at once; edit mode holds exactly one
+  days: ['monday'],
   start_time: '09:00',
   end_time: '17:00',
   pause_start: '12:00',
@@ -103,7 +114,7 @@ export default function Schedule() {
   function openEdit(s) {
     setEditingId(s.id)
     setForm({
-      day_of_week: s.day_of_week,
+      days: [s.day_of_week],
       start_time: toTimeInput(s.start_time),
       end_time: toTimeInput(s.end_time),
       pause_start: toTimeInput(s.pause_start) || '',
@@ -118,26 +129,46 @@ export default function Schedule() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (form.days.length === 0) {
+      setActionError('Pick at least one day.')
+      return
+    }
     setSubmitting(true)
     setActionError(null)
     try {
-      const payload = {
-        day_of_week: form.day_of_week,
+      // Fields shared across every day being created/updated.
+      const base = {
         start_time: form.start_time + ':00',
         end_time: form.end_time + ':00',
         slot_duration: Number(form.slot_duration),
       }
       if (form.pause_start && form.pause_end) {
-        payload.pause_start = form.pause_start + ':00'
-        payload.pause_end = form.pause_end + ':00'
+        base.pause_start = form.pause_start + ':00'
+        base.pause_end = form.pause_end + ':00'
       }
-      if (form.valid_from) payload.valid_from = form.valid_from
-      if (form.valid_to) payload.valid_to = form.valid_to
+      if (form.valid_from) base.valid_from = form.valid_from
+      if (form.valid_to) base.valid_to = form.valid_to
 
       if (editingId) {
-        await api.patch(`/schedules/${editingId}`, payload)
+        await api.patch(`/schedules/${editingId}`, {
+          ...base,
+          day_of_week: form.days[0],
+        })
       } else {
-        await api.post('/schedules', payload)
+        // One schedule row per selected day. Skip days that already exist
+        // so the backend's per-day uniqueness doesn't reject the whole batch.
+        const taken = new Set(schedules.map((s) => s.day_of_week))
+        const toCreate = form.days.filter((d) => !taken.has(d))
+        if (toCreate.length === 0) {
+          setActionError('You already have a schedule for the selected day(s).')
+          setSubmitting(false)
+          return
+        }
+        await Promise.all(
+          toCreate.map((d) =>
+            api.post('/schedules', { ...base, day_of_week: d }),
+          ),
+        )
       }
       setShowForm(false)
       setForm(BLANK_FORM)
@@ -227,23 +258,43 @@ export default function Schedule() {
           </h2>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-xs font-medium text-slate-600">
-                Day of week
+                {editingId ? 'Day of week' : 'Days you work'}
+                {!editingId && (
+                  <span className="ml-1 text-slate-400">
+                    (pick one or more)
+                  </span>
+                )}
               </label>
-              <select
-                value={form.day_of_week}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, day_of_week: e.target.value }))
-                }
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-              >
-                {DAYS.map((d) => (
-                  <option key={d} value={d}>
-                    {d[0].toUpperCase() + d.slice(1)}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {DAYS.map((d) => {
+                  const selected = form.days.includes(d)
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() =>
+                        setForm((f) => {
+                          if (editingId) return { ...f, days: [d] }
+                          const days = f.days.includes(d)
+                            ? f.days.filter((x) => x !== d)
+                            : [...f.days, d]
+                          return { ...f, days }
+                        })
+                      }
+                      className={
+                        'rounded-full border px-4 py-1.5 text-sm font-medium transition ' +
+                        (selected
+                          ? 'border-teal-600 bg-teal-600 text-white'
+                          : 'border-slate-300 bg-white text-slate-600 hover:border-teal-400 hover:text-teal-700')
+                      }
+                    >
+                      {DAY_LABELS[d]}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             <div>
