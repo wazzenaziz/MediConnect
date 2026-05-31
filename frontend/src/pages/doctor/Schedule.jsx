@@ -133,21 +133,25 @@ export default function Schedule() {
       setActionError('Pick at least one day.')
       return
     }
+    if (!form.valid_from || !form.valid_to) {
+      setActionError('Pick a "valid from" and "valid to" date.')
+      return
+    }
     setSubmitting(true)
     setActionError(null)
     try {
-      // Fields shared across every day being created/updated.
+      // Backend validates times as HH:MM (24h) — send them as-is, no ':00'.
       const base = {
-        start_time: form.start_time + ':00',
-        end_time: form.end_time + ':00',
+        start_time: form.start_time,
+        end_time: form.end_time,
         slot_duration: Number(form.slot_duration),
+        valid_from: form.valid_from,
+        valid_to: form.valid_to,
       }
       if (form.pause_start && form.pause_end) {
-        base.pause_start = form.pause_start + ':00'
-        base.pause_end = form.pause_end + ':00'
+        base.pause_start = form.pause_start
+        base.pause_end = form.pause_end
       }
-      if (form.valid_from) base.valid_from = form.valid_from
-      if (form.valid_to) base.valid_to = form.valid_to
 
       if (editingId) {
         await api.patch(`/schedules/${editingId}`, {
@@ -175,9 +179,16 @@ export default function Schedule() {
       setEditingId(null)
       loadSchedules()
     } catch (err) {
-      const apiMsg = err.response?.data?.message
-      const apiErr = err.response?.data?.error
-      setActionError(apiErr ? `${apiMsg} (${apiErr})` : apiMsg || 'Save failed.')
+      const data = err.response?.data
+      // Zod validation rejects come back as { message, errors: [{field, message}] }.
+      const fieldErrors = Array.isArray(data?.errors)
+        ? data.errors.map((e) => `${e.field}: ${e.message}`).join(' · ')
+        : null
+      setActionError(
+        fieldErrors ||
+          (data?.error ? `${data.message} (${data.error})` : data?.message) ||
+          'Save failed.',
+      )
     } finally {
       setSubmitting(false)
     }
@@ -378,6 +389,7 @@ export default function Schedule() {
               </label>
               <input
                 type="date"
+                required
                 value={form.valid_from}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, valid_from: e.target.value }))
@@ -392,6 +404,7 @@ export default function Schedule() {
               </label>
               <input
                 type="date"
+                required
                 value={form.valid_to}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, valid_to: e.target.value }))
