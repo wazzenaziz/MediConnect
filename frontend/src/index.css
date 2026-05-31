@@ -1,16 +1,16 @@
 /* ============================================================
    MediConnect — index.css  (DROP-IN REPLACEMENT)
    Stack: Tailwind CSS v4 + Vite + React 19
-   Replaces: frontend/src/index.css
+   Now with DARK MODE. Toggle adds class "dark" to <html>.
    ------------------------------------------------------------
-   In Tailwind v4 the @theme block IS the config — every token
-   below auto-generates utilities:
-     --color-brand-600  -> bg-brand-600  text-brand-600  border-brand-600
-     --radius-lg        -> rounded-lg
-     --shadow-card      -> shadow-card
-     --font-sans        -> font-sans
-   So after pasting this, you restyle components with normal
-   Tailwind classes (e.g. className="bg-brand-600"), no JS needed.
+   How dark mode works WITHOUT touching components:
+   In Tailwind v4 every color utility compiles to
+     .bg-ink-50 { background-color: var(--color-ink-50) }
+   So redefining the ink ramp + soft tints under `.dark` flips
+   the whole app. Vivid solids (bg-brand-600, text-white) are
+   left intact so buttons/avatars keep working.
+   The custom rules below are UNLAYERED, so they always win over
+   Tailwind's layered utilities — no !important needed.
    ============================================================ */
 
 /* Fonts first — @import rules must precede everything else. */
@@ -50,6 +50,7 @@
   /* ---- Indigo (admin) ---- */
   --color-indigo-50:  #f1eefe;
   --color-indigo-100: #e4ddfd;
+  --color-indigo-200: #d7cdfb;
   --color-indigo-500: #6d4fe0;
   --color-indigo-600: #5a37d6;
   --color-indigo-700: #4a2cb3;
@@ -91,10 +92,116 @@
 }
 
 /* ============================================================
+   DARK MODE
+   `.dark` lives on <html>. These overrides are unlayered, so
+   they beat Tailwind's layered utilities automatically.
+   ============================================================ */
+.dark {
+  color-scheme: dark;
+
+  /* Neutral ramp — INVERTED so all ink utilities flip.
+     ink-50 (page bg) becomes darkest; ink-900 (headings) lightest.
+     Contrast ratios below are measured against the dark card (#131c2e). */
+  --color-ink-50:  #0b1120;  /* page background */
+  --color-ink-100: #1b2336;  /* hover fills (sits just above a card) */
+  --color-ink-150: #1f2940;
+  --color-ink-200: #2c3850;  /* borders */
+  --color-ink-300: #3a485f;  /* input borders */
+  --color-ink-400: #8893a6;  /* muted icons / placeholder   ~4.7:1 */
+  --color-ink-500: #a4b0c1;  /* secondary text              ~6.4:1 */
+  --color-ink-600: #bcc7d4;  /* strong secondary            ~8.4:1 */
+  --color-ink-700: #d2dae4;  /* body text                   ~10.4:1 */
+  --color-ink-800: #e6ebf1;  /* emphasis                    ~12.6:1 */
+  --color-ink-900: #f4f7fb;  /* headings                    ~14.2:1 */
+
+  /* ---- Tailwind DEFAULT neutrals (slate / gray) ----
+     Some pages (doctor Home, Schedule, Profile) still style with the
+     stock `slate-*` / `gray-*` classes instead of our `ink-*` tokens.
+     Those utilities read var(--color-slate-900) etc., so inverting these
+     ramps the same way makes those pages legible too — no page rewrite. */
+  --color-slate-50:  #0b1120;
+  --color-slate-100: #1b2336;
+  --color-slate-200: #2c3850;  /* borders / dividers */
+  --color-slate-300: #3a485f;  /* input borders */
+  --color-slate-400: #8893a6;  /* placeholder / muted    ~4.7:1 */
+  --color-slate-500: #a4b0c1;  /* secondary text         ~6.4:1 */
+  --color-slate-600: #bcc7d4;
+  --color-slate-700: #d2dae4;  /* body text */
+  --color-slate-800: #e6ebf1;
+  --color-slate-900: #f4f7fb;  /* headings / stat numbers */
+  --color-slate-950: #ffffff;
+
+  --color-gray-50:  #0b1120;
+  --color-gray-100: #1b2336;
+  --color-gray-200: #2c3850;
+  --color-gray-300: #3a485f;
+  --color-gray-400: #8893a6;
+  --color-gray-500: #a4b0c1;
+  --color-gray-600: #bcc7d4;
+  --color-gray-700: #d2dae4;
+  --color-gray-800: #e6ebf1;
+  --color-gray-900: #f4f7fb;
+  --color-gray-950: #ffffff;
+
+  /* Soft brand/role tints — re-tinted for dark backgrounds. */
+  --color-brand-50:  rgba(46,107,240,.16);
+  --color-brand-200: rgba(46,107,240,.38);
+  --color-brand-700: #9bbcff;     /* text on the brand tint + card labels */
+
+  --color-teal-50:  rgba(17,158,139,.16);
+  --color-teal-100: rgba(17,158,139,.28);
+  --color-teal-200: rgba(17,158,139,.40);
+  --color-teal-700: #5fd0bf;
+
+  --color-indigo-50:  rgba(109,79,224,.20);
+  --color-indigo-100: rgba(109,79,224,.30);
+  --color-indigo-200: rgba(109,79,224,.42);
+  --color-indigo-700: #bcabf6;
+
+  --color-coral-50:  rgba(250,93,68,.16);
+  --color-coral-600: #ff8a76;
+
+  /* Status — lighten the foreground, darken the soft bg/border. */
+  --color-success: #34d399;  --color-success-bg: rgba(14,159,110,.16);  --color-success-bd: rgba(14,159,110,.40);
+  --color-warning: #f2bd4d;  --color-warning-bg: rgba(217,146,10,.18);  --color-warning-bd: rgba(217,146,10,.40);
+  --color-danger:  #fb7185;  --color-danger-bg:  rgba(225,29,72,.16);   --color-danger-bd:  rgba(225,29,72,.42);
+
+  /* Shadows are invisible on dark — make them deeper; borders carry definition. */
+  --shadow-xs:   0 1px 2px rgba(0,0,0,.40);
+  --shadow-card: 0 1px 3px rgba(0,0,0,.45);
+  --shadow-md:   0 8px 20px -6px rgba(0,0,0,.55);
+  --shadow-lg:   0 18px 40px -12px rgba(0,0,0,.60);
+}
+
+/* Cards/inputs/headers use `bg-white`. We DON'T override --color-white
+   (that would break text-white on buttons). Instead retarget the white
+   surface to a dark card colour, with higher specificity than the utility. */
+.dark .bg-white            { background-color: #131c2e; }
+.dark .bg-white\/70        { background-color: rgba(19,28,46,.72); }
+.dark .bg-white\/80        { background-color: rgba(19,28,46,.82); }
+.dark .bg-white\/90        { background-color: rgba(19,28,46,.90); }
+
+/* Form controls: recess them slightly below the card so fields read as
+   inputs, and guarantee a legible placeholder everywhere (~4.7:1). */
+.dark input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.dark textarea,
+.dark select {
+  background-color: #101a2c;
+  color: var(--color-ink-800);
+}
+.dark ::placeholder { color: #8893a6; opacity: 1; }
+
+/* A couple of brand text shades read better lighter in dark mode. */
+.dark .text-brand-600  { color: #6f9bf5; }
+.dark .text-teal-600   { color: #23c0a8; }
+.dark .text-indigo-600 { color: #9d86f1; }
+
+/* The blue→teal logo gradient is a literal SVG fill, so it stays vivid
+   in both themes — no change needed. */
+
+/* ============================================================
    Base layer
    ============================================================ */
-:root { color-scheme: light; }
-
 html, body, #root { height: 100%; }
 
 body {
@@ -104,6 +211,7 @@ body {
   color: var(--color-ink-700);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  transition: background-color .25s ease, color .25s ease;
 }
 
 /* Headings inherit the brand ink + tight tracking by default. */
@@ -112,7 +220,7 @@ h1, h2, h3, h4 { color: var(--color-ink-900); letter-spacing: -0.02em; }
 /* One consistent focus ring across the whole app. */
 :where(button, a, input, select, textarea):focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(46, 107, 240, .18);
+  box-shadow: 0 0 0 4px rgba(46, 107, 240, .30);
   border-color: var(--color-brand-500);
 }
 
@@ -128,4 +236,5 @@ h1, h2, h3, h4 { color: var(--color-ink-900); letter-spacing: -0.02em; }
 @media (prefers-reduced-motion: reduce) {
   .mc-skeleton { animation: none; }
   html { scroll-behavior: auto; }
+  body { transition: none; }
 }

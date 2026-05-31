@@ -1,9 +1,7 @@
 // ============================================================
 // MediConnect — DashboardLayout.jsx   (REPLACE existing)
-// frontend/src/components/DashboardLayout.jsx
-// Fixes: (1) role now a coloured PILL, not faint grey text.
-//        (2) log-out gets an icon + a real user card (avatar).
-// Requires: lucide-react, and ../lib/ui (Avatar / roleToken).
+// Adds the <ThemeToggle/> to the desktop + mobile headers.
+// Everything else identical to the previous version.
 // ============================================================
 import { NavLink, Outlet } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
@@ -11,6 +9,7 @@ import { useAuth } from '../context/AuthContext'
 import { roleToken } from '../lib/ui'
 import { Avatar } from './ui'
 import NotificationBell from './NotificationBell'
+import ThemeToggle from './ThemeToggle'
 
 // Legacy accent props (sky/emerald/violet) → design-system role names.
 const ACCENT_TO_ROLE = { sky: 'patient', emerald: 'doctor', violet: 'admin' }
@@ -105,7 +104,8 @@ export default function DashboardLayout({ accent = 'sky', roleLabel, navItems })
 
       <div className="flex min-h-screen flex-1 flex-col">
         {/* Desktop top header */}
-        <header className="hidden h-14 items-center justify-end border-b border-ink-200 bg-white px-6 md:flex">
+        <header className="hidden h-14 items-center justify-end gap-2 border-b border-ink-200 bg-white px-6 md:flex">
+          <ThemeToggle />
           <NotificationBell />
         </header>
 
@@ -119,6 +119,7 @@ export default function DashboardLayout({ accent = 'sky', roleLabel, navItems })
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <NotificationBell />
             <button
               onClick={logout}
