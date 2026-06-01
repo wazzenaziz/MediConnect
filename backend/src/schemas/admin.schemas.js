@@ -15,6 +15,9 @@ const createDoctorAccountSchema = z
       .string()
       .min(8, "Password must be at least 8 characters")
       .max(72, "Password cannot exceed 72 characters"),
+    // Mirror of `password`; re-checked server-side so a mismatch can't be
+    // submitted even if the admin form's client validation is bypassed.
+    confirm_password: z.string(),
     full_name: z
       .string()
       .min(2, "Name must be at least 2 characters")
@@ -46,6 +49,10 @@ const createDoctorAccountSchema = z
       .max(180, "Longitude must be between -180 and 180")
       .optional(),
   })
-  .strict();
+  .strict()
+  .refine((data) => data.password === data.confirm_password, {
+    message: "Passwords do not match",
+    path: ["confirm_password"],
+  });
 
 module.exports = { createDoctorAccountSchema };

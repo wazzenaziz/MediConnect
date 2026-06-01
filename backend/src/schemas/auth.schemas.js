@@ -20,6 +20,9 @@ const registerSchema = z
       .string()
       .min(8, "Password must be at least 8 characters")
       .max(72, "Password cannot exceed 72 characters"),
+    // Mirror of `password`; the client sends it and we re-check equality
+    // server-side so a tampered/bypassed client can't slip a mismatch through.
+    confirm_password: z.string(),
     full_name: z
       .string()
       .min(2, "Name must be at least 2 characters")
@@ -30,7 +33,11 @@ const registerSchema = z
       .regex(/^\+?[0-9]{8,15}$/, "Phone must be 8-15 digits, optional + prefix")
       .optional(),
   })
-  .strict();
+  .strict()
+  .refine((data) => data.password === data.confirm_password, {
+    message: "Passwords do not match",
+    path: ["confirm_password"],
+  });
 
 // ============================================================
 // LOGIN schema

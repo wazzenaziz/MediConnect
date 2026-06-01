@@ -3,15 +3,17 @@ import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui'
+import PasswordField from '../components/PasswordField'
 
 const PHONE_RE = /^\+?[0-9]{8,15}$/
 
-function validate({ full_name, email, password, phone }) {
+function validate({ full_name, email, password, confirm_password, phone }) {
   if (full_name.trim().length < 2) return 'Full name must be at least 2 characters.'
   if (full_name.trim().length > 100) return 'Full name is too long.'
   if (!/^\S+@\S+\.\S+$/.test(email)) return 'Please enter a valid email address.'
   if (password.length < 8) return 'Password must be at least 8 characters.'
   if (password.length > 72) return 'Password cannot exceed 72 characters.'
+  if (password !== confirm_password) return 'Passwords do not match.'
   if (phone && !PHONE_RE.test(phone))
     return 'Phone must be 8–15 digits, with an optional + prefix.'
   return null
@@ -25,6 +27,7 @@ export default function Register() {
     full_name: '',
     email: '',
     password: '',
+    confirm_password: '',
     phone: '',
   })
   const [submitting, setSubmitting] = useState(false)
@@ -34,6 +37,11 @@ export default function Register() {
   function update(field) {
     return (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
   }
+
+  // Live confirm-password check: only flag once the user has started
+  // typing the confirmation, so the field isn't red before it's touched.
+  const passwordsMismatch =
+    form.confirm_password.length > 0 && form.password !== form.confirm_password
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -52,6 +60,7 @@ export default function Register() {
         full_name: form.full_name.trim(),
         email: form.email.trim().toLowerCase(),
         password: form.password,
+        confirm_password: form.confirm_password,
       }
       if (form.phone.trim()) payload.phone = form.phone.trim()
 
@@ -165,17 +174,41 @@ export default function Register() {
             >
               Password
             </label>
-            <input
+            <PasswordField
               id="password"
-              type="password"
               autoComplete="new-password"
               required
               minLength={8}
               value={form.password}
               onChange={update('password')}
-              className="mt-1 block w-full rounded-md border border-ink-300 px-3 py-2.5 text-ink-900"
+              inputClassName="mt-1 block w-full rounded-md border border-ink-300 px-3 py-2.5 text-ink-900"
               placeholder="At least 8 characters"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="confirm_password"
+              className="block text-sm font-medium text-ink-700"
+            >
+              Confirm password
+            </label>
+            <PasswordField
+              id="confirm_password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              value={form.confirm_password}
+              onChange={update('confirm_password')}
+              invalid={passwordsMismatch}
+              inputClassName={`mt-1 block w-full rounded-md border px-3 py-2.5 text-ink-900 ${
+                passwordsMismatch ? 'border-danger' : 'border-ink-300'
+              }`}
+              placeholder="Re-enter your password"
+            />
+            {passwordsMismatch && (
+              <p className="mt-1 text-xs text-danger">Passwords do not match.</p>
+            )}
           </div>
 
           {error && (
@@ -196,7 +229,11 @@ export default function Register() {
             </div>
           )}
 
-          <Button type="submit" disabled={submitting} className="w-full">
+          <Button
+            type="submit"
+            disabled={submitting || passwordsMismatch}
+            className="w-full"
+          >
             {submitting ? 'Creating account…' : 'Create account'}
           </Button>
         </form>

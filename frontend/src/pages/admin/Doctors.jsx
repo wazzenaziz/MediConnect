@@ -4,6 +4,7 @@ import { useConfirm } from '../../context/ConfirmContext'
 import LocationPicker from '../../components/LocationPicker'
 import { Stethoscope, Search } from 'lucide-react'
 import { Button, Person, Card, SkeletonRows, EmptyState } from '../../components/ui'
+import PasswordField from '../../components/PasswordField'
 
 const PAGE_SIZE = 25
 
@@ -27,6 +28,7 @@ const SPECIALTIES = [
 const BLANK_FORM = {
   email: '',
   password: '',
+  confirm_password: '',
   full_name: '',
   phone: '',
   specialty: 'General Practitioner',
@@ -99,11 +101,18 @@ export default function AdminDoctors() {
     e.preventDefault()
     setSubmitError(null)
     setSubmitSuccess(null)
+
+    if (form.password !== form.confirm_password) {
+      setSubmitError('Passwords do not match.')
+      return
+    }
+
     setSubmitting(true)
     try {
       const payload = {
         email: form.email.trim().toLowerCase(),
         password: form.password,
+        confirm_password: form.confirm_password,
         full_name: form.full_name.trim(),
         specialty: form.specialty,
         clinic_address: form.clinic_address.trim(),
@@ -150,6 +159,11 @@ export default function AdminDoctors() {
       (a.full_name || '').localeCompare(b.full_name || ''),
     )
   }, [doctors, query, specialtyFilter])
+
+  // Live confirm-password check for the onboarding form — only flag once
+  // the admin has started typing the confirmation.
+  const passwordsMismatch =
+    form.confirm_password.length > 0 && form.password !== form.confirm_password
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, pageCount)
@@ -264,8 +278,9 @@ export default function AdminDoctors() {
               <label className="block text-xs font-medium text-slate-600">
                 Initial password
               </label>
-              <input
-                type="text"
+              <PasswordField
+                id="doctor_password"
+                autoComplete="new-password"
                 required
                 minLength={8}
                 value={form.password}
@@ -273,8 +288,33 @@ export default function AdminDoctors() {
                   setForm((f) => ({ ...f, password: e.target.value }))
                 }
                 placeholder="At least 8 characters"
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                inputClassName="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
               />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600">
+                Confirm password
+              </label>
+              <PasswordField
+                id="doctor_confirm_password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                value={form.confirm_password}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, confirm_password: e.target.value }))
+                }
+                invalid={passwordsMismatch}
+                placeholder="Re-enter the password"
+                inputClassName={`mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm ${
+                  passwordsMismatch ? 'border-red-400' : 'border-slate-300'
+                }`}
+              />
+              {passwordsMismatch && (
+                <p className="mt-1 text-xs text-red-600">
+                  Passwords do not match.
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600">
@@ -334,7 +374,7 @@ export default function AdminDoctors() {
           <div className="mt-5 flex gap-2">
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || passwordsMismatch}
               className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700 disabled:opacity-60"
             >
               {submitting ? 'Creating…' : 'Create doctor account'}
