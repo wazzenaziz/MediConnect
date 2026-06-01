@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui'
+import GoogleSignInButton from '../components/GoogleSignInButton'
 
 function dashboardPath(role) {
   if (role === 'doctor') return '/doctor'
@@ -78,12 +79,20 @@ export default function Login() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-ink-700"
-            >
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-ink-700"
+              >
+                Password
+              </label>
+              <Link
+                to="/forgot-password"
+                className="text-xs font-medium text-brand-600 hover:text-brand-700"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"
@@ -109,6 +118,16 @@ export default function Login() {
             {submitting ? 'Logging in…' : 'Log in'}
           </Button>
         </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <span className="h-px flex-1 bg-ink-200" />
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
+            or
+          </span>
+          <span className="h-px flex-1 bg-ink-200" />
+        </div>
+
+        <GoogleSignInButton />
 
         <p className="mt-6 text-center text-sm text-ink-500">
           New to MediConnect?{' '}

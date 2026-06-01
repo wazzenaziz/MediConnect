@@ -54,7 +54,52 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+// ============================================================
+// FORGOT PASSWORD schema
+// ============================================================
+// Used by POST /api/auth/forgot-password
+//
+// Only the email is needed to trigger a reset email. We intentionally
+// keep this minimal — the endpoint always responds the same way whether
+// or not the email exists, so we don't leak which addresses are registered.
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email format").toLowerCase().trim(),
+});
+
+// ============================================================
+// RESET PASSWORD schema
+// ============================================================
+// Used by POST /api/auth/reset-password
+//
+// `access_token` is the short-lived recovery token Supabase put in the
+// reset link (delivered to the frontend in the URL hash). `password` is
+// the new password and must clear the same strength bar as registration
+// (8–72 chars; 72 is bcrypt's input ceiling, which Supabase uses).
+const resetPasswordSchema = z.object({
+  access_token: z.string().min(1, "Reset token is required"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password cannot exceed 72 characters"),
+});
+
+// ============================================================
+// GOOGLE SIGN-IN schema
+// ============================================================
+// Used by POST /api/auth/google
+//
+// `id_token` is the Google-issued ID token (a JWT) from Google Identity
+// Services in the browser. `nonce` is optional — if the frontend generated
+// one for the Google request, Supabase re-checks it against the token.
+const googleSignInSchema = z.object({
+  id_token: z.string().min(1, "Google ID token is required"),
+  nonce: z.string().optional(),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  googleSignInSchema,
 };
