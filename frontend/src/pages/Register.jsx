@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { Button } from '../components/ui'
 import PasswordField from '../components/PasswordField'
+import GoogleSignInButton from '../components/GoogleSignInButton'
 
 const PHONE_RE = /^\+?[0-9]{8,15}$/
 
@@ -237,6 +238,16 @@ export default function Register() {
             {submitting ? 'Creating account…' : 'Create account'}
           </Button>
         </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <span className="h-px flex-1 bg-ink-200" />
+          <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
+            or
+          </span>
+          <span className="h-px flex-1 bg-ink-200" />
+        </div>
+
+        <GoogleSignInButton />
 
         <p className="mt-6 text-center text-sm text-ink-500">
           Already have an account?{' '}
