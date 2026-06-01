@@ -8,7 +8,7 @@
 // finds-or-creates the user, and returns our normal { user, access_token }.
 // No Supabase client lives in the browser — only Google's lightweight script.
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../context/AuthContext'
@@ -48,6 +48,28 @@ export default function GoogleSignInButton() {
 
   const from = location.state?.from?.pathname
 
+  // Declared before the effect (and memoised) so it's a stable reference the
+  // effect can depend on — Google calls this with the returned ID token.
+  const handleCredential = useCallback(
+    async (response) => {
+      setError(null)
+      try {
+        // response.credential is the Google ID token (JWT).
+        const { data } = await api.post('/auth/google', {
+          id_token: response.credential,
+        })
+        login(data.user, data.access_token)
+        navigate(from || dashboardPath(data.user.role), { replace: true })
+      } catch (err) {
+        setError(
+          err.response?.data?.message ||
+            'Could not sign in with Google. Please try again.',
+        )
+      }
+    },
+    [login, navigate, from],
+  )
+
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return
     let cancelled = false
@@ -72,25 +94,7 @@ export default function GoogleSignInButton() {
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  async function handleCredential(response) {
-    setError(null)
-    try {
-      // response.credential is the Google ID token (JWT).
-      const { data } = await api.post('/auth/google', {
-        id_token: response.credential,
-      })
-      login(data.user, data.access_token)
-      navigate(from || dashboardPath(data.user.role), { replace: true })
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          'Could not sign in with Google. Please try again.',
-      )
-    }
-  }
+  }, [handleCredential])
 
   // Without a client ID the button can't work — show a quiet hint instead of
   // a dead button, so local dev / unconfigured deploys are obvious.
