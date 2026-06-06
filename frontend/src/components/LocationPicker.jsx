@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { api } from '../lib/api'
@@ -32,6 +32,19 @@ function normalizePosition(value) {
     return [Number(value.lat), Number(value.lng)]
   }
   return TUNIS_CENTER
+}
+
+// Click anywhere on the map to drop the pin there. Lives as a child of
+// <MapContainer> so it can hook the map's click event. The pin then
+// reverse-geocodes to fill the address — same path as a drag.
+function ClickToPlace({ onPick }) {
+  useMapEvents({
+    click: (e) => {
+      const { lat, lng } = e.latlng
+      onPick([lat, lng])
+    },
+  })
+  return null
 }
 
 // react-leaflet doesn't reactively update <MapContainer center> after
@@ -159,12 +172,19 @@ export default function LocationPicker({
     onChange?.({ lat, lng, address: r.display_name })
   }
 
+  // Shared by map-click and pin-drag: move the pin to a spot and resolve
+  // its address. Click-to-place lets users pick the exact point with the
+  // mouse instead of only dragging.
+  function placePin([lat, lng]) {
+    setPosition([lat, lng])
+    reverseGeocode([lat, lng])
+  }
+
   const markerEventHandlers = useMemo(
     () => ({
       dragend: (e) => {
         const { lat, lng } = e.target.getLatLng()
-        setPosition([lat, lng])
-        reverseGeocode([lat, lng])
+        placePin([lat, lng])
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -238,6 +258,7 @@ export default function LocationPicker({
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <MapPanner position={position} zoom={13} />
+          <ClickToPlace onPick={placePin} />
           <Marker
             position={position}
             draggable
@@ -247,8 +268,8 @@ export default function LocationPicker({
       </div>
 
       <p className="text-[11px] text-slate-500">
-        Search for your clinic above, then drag the pin to the exact spot.
-        Coordinates:{' '}
+        Search for your clinic above, then click the map or drag the pin to
+        the exact spot. Coordinates:{' '}
         <span className="font-mono">
           {position[0].toFixed(5)}, {position[1].toFixed(5)}
         </span>
