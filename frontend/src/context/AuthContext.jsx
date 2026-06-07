@@ -39,8 +39,21 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  // Merge fields into the current user (e.g. clearing must_change_password
+  // after a forced first-login change) and persist, without a full re-login.
+  const updateUser = (patch) => {
+    setUser((cur) => {
+      if (!cur) return cur
+      const next = { ...cur, ...patch }
+      localStorage.setItem(USER_KEY, JSON.stringify(next))
+      return next
+    })
+  }
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, token, loading, login, logout, updateUser }}
+    >
       {children}
     </AuthContext.Provider>
   )

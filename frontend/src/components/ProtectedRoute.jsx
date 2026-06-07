@@ -17,6 +17,13 @@ export default function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
+  // Doctors onboarded by an admin get a temporary password and must set
+  // their own before using the app. Gate every protected route until the
+  // flag is cleared — except the change-password page itself.
+  if (user.must_change_password && location.pathname !== '/change-password') {
+    return <Navigate to="/change-password" replace />
+  }
+
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     const fallback =
       user.role === 'admin'

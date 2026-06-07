@@ -27,7 +27,7 @@ const login = async (req, res) => {
 
     const { data: profile, error: profileError } = await supabase
       .from("users")
-      .select("id, email, full_name, phone, role")
+      .select("id, email, full_name, phone, role, must_change_password")
       .eq("id", data.user.id)
       .single();
 
@@ -316,10 +316,53 @@ const googleSignIn = async (req, res) => {
   }
 };
 
+// ============================================================
+// CHANGE PASSWORD — authenticated, used for forced first-login change
+// ============================================================
+// POST /api/auth/change-password   body: { password }   (auth required)
+//
+// The user is already authenticated (authMiddleware sets req.user), so we
+// update their password with the service_role admin client and clear the
+// must_change_password flag. Used by the first-login gate for doctors the
+// admin onboarded with a temporary password.
+const changePassword = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { password } = req.body;
+
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      userId,
+      { password }
+    );
+    if (updateError) {
+      return res.status(400).json({
+        message: "Could not change password.",
+        error: updateError.message,
+      });
+    }
+
+    // Clear the forced-change flag now that they've set their own password.
+    const { error: flagError } = await supabase
+      .from("users")
+      .update({ must_change_password: false })
+      .eq("id", userId);
+    if (flagError) {
+      console.error(
+        `[auth] cleared password but failed to reset flag for ${userId}: ${flagError.message}`
+      );
+    }
+
+    return res.status(200).json({ message: "Password changed." });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error.", error: err.message });
+  }
+};
+
 module.exports = {
   login,
   register,
   forgotPassword,
   resetPassword,
   googleSignIn,
+  changePassword,
 };

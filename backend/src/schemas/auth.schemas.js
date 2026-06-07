@@ -96,10 +96,24 @@ const googleSignInSchema = z.object({
   nonce: z.string().optional(),
 });
 
+// ============================================================
+// CHANGE PASSWORD schema
+// ============================================================
+// Used by POST /api/auth/change-password (authenticated). Same strength
+// bar as register/reset. Confirmation is checked client-side; here we just
+// enforce the new password is valid.
+const changePasswordSchema = z.object({
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(72, "Password cannot exceed 72 characters"),
+});
+
 module.exports = {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   googleSignInSchema,
+  changePasswordSchema,
 };
