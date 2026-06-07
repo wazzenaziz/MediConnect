@@ -34,7 +34,7 @@ This costs **time, money, and an unnecessary first consultation** in cases where
 **MediConnect compresses that workflow into a single guided flow:**
 
 1. The patient describes their symptoms.
-2. AI-assisted triage suggests the most likely medical specialty *(planned, see Roadmap)*.
+2. AI-assisted triage suggests the most likely medical specialty.
 3. The platform shows the **nearest qualified specialists** with their **real-time availability**.
 4. The patient books an appointment in one click — no phone calls, no clinic-by-clinic search.
 
@@ -57,12 +57,15 @@ All four planned phases are complete and live in production.
 
 | Feature | Implementation |
 |---|---|
-| **AI symptom triage** | Patient describes symptoms → backend calls Groq (Llama 3.3 70B) with a constrained system prompt and JSON-mode → returns one of 14 medical specialties with confidence and reasoning |
-| **Proximity doctor search** | PostgreSQL Haversine RPC (`nearby_doctors`) computes distance in pure SQL, no PostGIS dependency. Leaflet + OpenStreetMap render the map with markers, popups, and a radius circle. Browser geolocation with Tunis-center fallback. |
-| **Real-time appointments** | Socket.io server with JWT auth, per-user / per-doctor rooms. Patients get a toast when a doctor cancels; doctors get a toast when a patient books. Slot picker auto-refreshes when someone else takes a slot. |
-| **Booking flow** | 14-day slot picker grouped morning / afternoon / evening. UTC-aware timezone handling for Africa/Tunis. Database-level concurrency safety via PostgreSQL `EXCLUDE` constraint. Cancel + Book-again with deduplication. |
-| **Doctor dashboard** | Today's appointments widget, weekly schedule manager (table editor with lunch break + slot duration + validity range), full appointment lifecycle (pending → confirmed → completed → cancel), consultation notes (diagnosis + prescription + follow-up). |
-| **Auth** | Supabase Auth with role-based routing (patient / doctor / admin). JWT in localStorage with automatic 401 logout. |
+| **AI symptom triage** | Patient describes symptoms → backend calls Groq (Llama 3.3 70B) with a constrained system prompt and JSON-mode → returns one of 14 medical specialties with confidence and reasoning. |
+| **Proximity doctor search** | PostgreSQL Haversine RPC (`nearby_doctors`) computes distance in pure SQL, no PostGIS dependency. Leaflet + OpenStreetMap render the map with markers, popups, and a radius circle. Browser geolocation with a Tunis-center fallback. |
+| **Real-time appointments** | Socket.io server with JWT auth and per-user / per-doctor rooms. Patients get a toast when a doctor cancels; doctors get a toast when a patient books. The slot picker auto-refreshes when someone else takes a slot. |
+| **Booking flow** | 14-day slot picker grouped morning / afternoon / evening. UTC-aware timezone handling for Africa/Tunis. Database-level concurrency safety via a PostgreSQL `EXCLUDE` constraint. Cancel + book-again with deduplication. |
+| **Patient experience** | Triage → doctor search → profile → booking → appointment history, plus profile editing and medical-history view. |
+| **Doctor dashboard** | Today's appointments widget, weekly schedule manager (table editor with lunch break + slot duration + validity range), full appointment lifecycle (pending → confirmed → completed → cancel), and consultation notes (diagnosis + prescription + follow-up). |
+| **Admin dashboard** | Platform stats, patient and doctor management, appointment oversight, and an email-template editor. Doctors are provisioned by admins and emailed their credentials on creation. |
+| **Auth** | Supabase Auth with role-based routing (patient / doctor / admin). JWT in localStorage with automatic 401 logout. Forced password change on a doctor's first login. Optional Google sign-in. |
+| **Transactional email** | Resend integration with database-backed, editable templates and a hardcoded fallback — used to send onboarded doctors their credentials. |
 | **CI/CD** | GitHub Actions: lint + build on every push and PR; deploy to Vercel + Render gated on CI success; Dependabot for weekly dependency updates. |
 
 ---
@@ -70,21 +73,31 @@ All four planned phases are complete and live in production.
 ## Tech Stack
 
 **Backend**
-- **Runtime:** Node.js + Express 5
+- **Runtime:** Node.js 20 + Express 5
 - **Database:** PostgreSQL (Supabase)
 - **Auth:** Supabase Auth (JWT)
+- **Realtime:** Socket.io
+- **AI:** Groq API (Llama 3.3 70B) for symptom triage
+- **Email:** Resend (transactional, DB-backed templates)
 - **Validation:** Zod (schema-based input validation as middleware)
 - **Security:** Helmet, CORS, express-rate-limit
 - **Logging:** Morgan
 - **Development:** nodemon
 
-**Frontend** *(planned)*
-- React + Vite
-- Tailwind CSS
+**Frontend**
+- **Framework:** React 19 + Vite 8
+- **Styling:** Tailwind CSS 4
+- **Routing:** React Router 7
+- **Maps:** Leaflet + React-Leaflet (OpenStreetMap tiles)
+- **HTTP:** Axios
+- **Realtime:** socket.io-client
+- **Icons:** lucide-react
 
-**Infrastructure** *(planned)*
-- Supabase (Postgres + Auth)
-- A cloud platform for Node.js hosting (Railway / Render / Vercel)
+**Infrastructure**
+- **Frontend hosting:** Vercel
+- **Backend hosting:** Render
+- **Database + Auth:** Supabase Cloud
+- **CI/CD:** GitHub Actions + Dependabot
 
 ---
 
@@ -92,18 +105,35 @@ All four planned phases are complete and live in production.
 
 ```
 MediConnect/
-└── backend/
-    ├── migrations/              SQL migrations (numbered chronologically)
+├── backend/
+│   ├── migrations/             SQL migrations (numbered chronologically)
+│   ├── src/
+│   │   ├── config/             Supabase client initialization
+│   │   ├── controllers/        Request handlers (one file per resource)
+│   │   ├── middleware/         Authentication, role checks, validation
+│   │   ├── routes/             Express routers (one file per resource)
+│   │   ├── schemas/            Zod schemas for request validation
+│   │   ├── services/           Side-effect services (e.g. email)
+│   │   ├── sockets/            Socket.io setup and event handlers
+│   │   ├── utils/              Shared helpers (e.g. authorization)
+│   │   ├── app.js              Express app: middleware + routes + error handler
+│   │   └── server.js           HTTP + Socket.io entry point
+│   ├── .env.example            Template for required environment variables
+│   └── package.json
+│
+└── frontend/
+    ├── public/                 Static assets
     ├── src/
-    │   ├── config/              Supabase client initialization
-    │   ├── controllers/         Request handlers (one file per resource)
-    │   ├── middleware/          Authentication, role checks, validation
-    │   ├── routes/              Express routers (one file per resource)
-    │   ├── schemas/             Zod schemas for request validation
-    │   ├── utils/               Shared helpers (e.g. authorization)
-    │   ├── app.js               Express app: middleware + routes + error handler
-    │   └── server.js            HTTP entry point
-    ├── .env.example             Template for required environment variables
+    │   ├── components/         Reusable UI components
+    │   ├── context/            React context (auth, etc.)
+    │   ├── lib/                API client, Socket.io client, helpers
+    │   └── pages/              Route views, grouped by role
+    │       ├── admin/          Admin dashboard views
+    │       ├── doctor/         Doctor dashboard views
+    │       └── patient/        Patient-facing views (incl. triage)
+    ├── index.html
+    ├── vite.config.js
+    ├── vercel.json
     └── package.json
 ```
 
@@ -111,37 +141,47 @@ MediConnect/
 
 ## Getting Started
 
+The project is a monorepo with two siblings — `backend/` and `frontend/` — run as separate processes during development.
+
 ### Prerequisites
 
-- **Node.js** 18+ and npm
+- **Node.js** 20+ and npm
 - A **Supabase project** (free tier is sufficient)
+- A **Groq API key** for AI triage — free at [console.groq.com](https://console.groq.com)
+- *(Optional)* A **Resend API key** for transactional email — free at [resend.com](https://resend.com)
 
-### 1. Clone and install
+### 1. Clone
 
 ```bash
 git clone https://github.com/wazzenaziz/MediConnect.git
-cd MediConnect/backend
-npm install
+cd MediConnect
 ```
 
-### 2. Configure environment variables
-
-Copy the template and fill in your values:
+### 2. Set up the backend
 
 ```bash
+cd backend
+npm install
 cp .env.example .env
 ```
 
-Open `.env` and set:
+Open `.env` and fill in your values:
 
 ```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-supabase-service-or-anon-key
 FRONTEND_URL=http://localhost:5173
 NODE_ENV=development
+
+# AI triage (required for the triage feature)
+GROQ_API_KEY=your-groq-api-key
+
+# Transactional email (optional — sends are skipped if unset)
+RESEND_API_KEY=your-resend-api-key
+EMAIL_FROM=MediConnect <onboarding@resend.dev>
 ```
 
-You can find `SUPABASE_URL` and `SUPABASE_KEY` in your Supabase project settings under **API**.
+You'll find `SUPABASE_URL` and `SUPABASE_KEY` in your Supabase project settings under **API**. If `RESEND_API_KEY` is unset, email sends are skipped (and logged) but doctor creation still succeeds.
 
 ### 3. Run database migrations
 
@@ -151,26 +191,84 @@ Migrations live in `backend/migrations/` and are numbered in the order they shou
 001_initial_schema.sql
 002_add_schedule_validity.sql
 …
-011_set_cascade_rules.sql
+012_nearby_doctors.sql
+…
+016_email_templates_and_force_password_change.sql
 ```
 
 > Migrations are kept as a faithful history of the schema's evolution — including early decisions later corrected by subsequent migrations.
 
-### 4. Start the development server
+### 4. Start the backend
 
 ```bash
 npm run dev
 ```
 
-The API will be available at `http://localhost:5000`.
+The API runs at `http://localhost:5000`. Check `http://localhost:5000/api/health` to confirm it's up.
 
-A health check is implicit — any request to a known route returns JSON; unknown routes return a clean 404.
+### 5. Set up the frontend
+
+In a second terminal:
+
+```bash
+cd frontend
+npm install
+```
+
+Create `frontend/.env.local`:
+
+```env
+VITE_API_URL=http://localhost:5000
+# Optional — only needed for Google sign-in
+VITE_GOOGLE_CLIENT_ID=your-google-oauth-client-id
+```
+
+> Vite bakes `VITE_*` variables in at **build time**. If you change them in a deployed environment (e.g. Vercel), you must **redeploy** for the change to take effect.
+
+### 6. Start the frontend
+
+```bash
+npm run dev
+```
+
+The app runs at `http://localhost:5173` and talks to the backend at `VITE_API_URL`.
+
+---
+
+## Usage
+
+### Common commands
+
+**Backend** (`cd backend`)
+
+```bash
+npm run dev      # start with nodemon (auto-reload)
+npm start        # start in production mode
+```
+
+**Frontend** (`cd frontend`)
+
+```bash
+npm run dev      # start the Vite dev server (HMR)
+npm run build    # production build to dist/
+npm run preview  # preview the production build locally
+npm run lint     # run ESLint
+```
+
+### Try the flow
+
+1. **Register** as a patient at `/register` (self-registration always creates a patient account).
+2. Go to **Triage**, describe your symptoms, and let the AI suggest a specialty.
+3. **Search doctors** — allow location access to see the nearest specialists on the map.
+4. Open a doctor's profile, pick a slot, and **book**.
+5. Log in as a **doctor** (provisioned by an admin) to manage schedules, appointments, and consultation notes.
+6. Log in as an **admin** to manage doctors/patients, view stats, and edit email templates.
 
 ---
 
 ## API Overview
 
-All endpoints are prefixed with `/api`. Most endpoints require a JWT in the `Authorization: Bearer <token>` header.
+All endpoints are prefixed with `/api`. Most require a JWT in the `Authorization: Bearer <token>` header.
 
 ### Authentication
 - `POST /api/auth/register` — Self-registration (creates a **patient** account)
@@ -214,8 +312,15 @@ All endpoints are prefixed with `/api`. Most endpoints require a JWT in the `Aut
 - `PATCH /api/notes/:id` — Update *(doctor / admin)*
 - `DELETE /api/notes/:id` — Delete *(doctor / admin)*
 
+### AI Triage
+- `POST /api/triage` — Submit symptom text → returns a suggested specialty with confidence and reasoning
+
+### Geocoding
+- `GET /api/geocode` — Resolve a clinic address to coordinates (used when provisioning doctors)
+
 ### Admin
 - `GET /api/admin/stats` — Aggregate platform stats *(admin)*
+- Email-template management endpoints *(admin)* — list, read, and update the DB-backed templates
 
 ---
 
@@ -228,6 +333,9 @@ Patients and admins live in a shared `users` table with a `role` column (Single 
 
 ### Double-booking prevented at the database level
 The `appointments` table has a Postgres `EXCLUDE` constraint over `(doctor_id, time-range)` using a GIST index. Even under concurrent requests, two overlapping appointments for the same doctor cannot both succeed. The application layer also checks availability for UX, but **correctness is enforced by the database**.
+
+### Proximity search without PostGIS
+Nearest-doctor search uses a plain SQL `nearby_doctors` RPC implementing the Haversine formula over stored latitude/longitude — no PostGIS extension required, which keeps the schema portable across Supabase tiers.
 
 ### Cascade rules are intent-driven
 Every foreign key declares an explicit `ON DELETE` rule:
@@ -254,19 +362,33 @@ This repository ships two GitHub Actions workflows:
 - **[`.github/workflows/ci.yml`](.github/workflows/ci.yml)** — runs on every push and pull request. Two parallel jobs:
   - `frontend`: install → ESLint → `vite build` (catches broken imports before Vercel builds)
   - `backend`: install → `node --check` over every `.js` file (catches syntax errors before Render boots)
-- **[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)** — triggers on successful CI run on `main`. POSTs to Vercel and Render deploy hooks. Concurrency-limited so back-to-back pushes don't queue obsolete deploys.
+- **[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)** — triggers on a successful CI run on `main`. POSTs to Vercel and Render deploy hooks. Concurrency-limited so back-to-back pushes don't queue obsolete deploys.
 
 Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) groups weekly minor/patch bumps for `frontend/`, `backend/`, and the GitHub Actions themselves.
 
-## Roadmap (post-defense)
+---
+
+## Roadmap
 
 - TypeScript migration
 - Automated tests (Jest + Supertest for backend, Vitest + Testing Library for frontend)
-- Row-Level Security policies in Supabase as a second auth layer
+- Row-Level Security policies in Supabase as a deeper second auth layer
 - Email / SMS appointment reminders (24h + 1h before)
 - Doctor verification workflow (license number check)
-- Admin dashboard (user management, platform stats)
-- Mobile-first refinements + native app via Capacitor
+- Mobile-first refinements + a native app via Capacitor
+
+---
+
+## Contributing
+
+This is primarily an academic project, but contributions and suggestions are welcome.
+
+1. Fork the repository and create a feature branch (`git checkout -b feature/your-feature`).
+2. Keep changes atomic — the app should always boot between commits.
+3. Run `npm run lint` (frontend) and confirm the backend starts cleanly before opening a PR.
+4. Open a pull request against `main` with a clear description.
+
+Found a bug or have an idea? Please [open an issue](https://github.com/wazzenaziz/MediConnect/issues).
 
 ---
 
@@ -276,8 +398,11 @@ Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) groups weekly mi
 
 This project is submitted as a Projet de Fin d'Année (PFA) and is part of a larger plan to learn full-stack delivery end-to-end: from database design through API hardening, to UI implementation, third-party AI integration, and production deployment.
 
+- GitHub: [@wazzenaziz](https://github.com/wazzenaziz)
+- Issues: [github.com/wazzenaziz/MediConnect/issues](https://github.com/wazzenaziz/MediConnect/issues)
+
 ---
 
 ## License
 
-This project is for academic and portfolio purposes. No license is granted for commercial use without explicit permission.
+Released under the [MIT License](LICENSE). You are free to use, modify, and distribute this software with attribution.
