@@ -55,4 +55,35 @@ const createDoctorAccountSchema = z
     path: ["confirm_password"],
   });
 
-module.exports = { createDoctorAccountSchema };
+// ============================================================
+// UPDATE EMAIL TEMPLATE (admin only)
+// ============================================================
+// Used by PUT /api/admin/templates/:key. Only subject + body are editable;
+// the key/name/variables are fixed because code references them.
+const updateTemplateSchema = z
+  .object({
+    subject: z
+      .string()
+      .min(1, "Subject is required")
+      .max(200, "Subject cannot exceed 200 characters")
+      .trim(),
+    body_html: z
+      .string()
+      .min(1, "Template body is required")
+      .max(50000, "Template body is too large"),
+  })
+  .strict();
+
+// Preview accepts an optional draft (subject/body) to render unsaved changes.
+const previewTemplateSchema = z
+  .object({
+    subject: z.string().max(200).optional(),
+    body_html: z.string().max(50000).optional(),
+  })
+  .strict();
+
+module.exports = {
+  createDoctorAccountSchema,
+  updateTemplateSchema,
+  previewTemplateSchema,
+};
