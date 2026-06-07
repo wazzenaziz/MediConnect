@@ -1,4 +1,5 @@
 const supabase = require("../config/supabase");
+const { sendTemplatedEmail } = require("../services/email.service");
 
 const getAdminStats = async (req, res) => {
   try {
@@ -156,6 +157,9 @@ const createDoctorAccount = async (req, res) => {
         email,
         phone,
         role: "doctor",
+        // Admin set a temporary password; force the doctor to change it on
+        // first login. The login gate reads this flag.
+        must_change_password: true,
       },
     ]);
 
@@ -195,11 +199,31 @@ const createDoctorAccount = async (req, res) => {
       });
     }
 
-    return res.status(201).json({
+    // Account is fully created — respond NOW. The welcome email is sent
+    // asynchronously (fire-and-forget) so a mail failure can never fail
+    // onboarding: the account exists and the admin still sees the
+    // credentials on screen. We log failures for follow-up.
+    res.status(201).json({
       message: "Doctor account created successfully",
       doctor: doctorRow,
       user: { id: authUserId, email, full_name, role: "doctor" },
     });
+
+    const loginUrl = `${(process.env.FRONTEND_URL || "").replace(/\/$/, "")}/login`;
+    sendTemplatedEmail({
+      to: email,
+      key: "doctor_welcome",
+      vars: { full_name, email, password, login_url: loginUrl },
+    })
+      .then((r) => {
+        if (!r.sent) {
+          console.error(`[email] doctor_welcome to ${email} failed:`, r.error);
+        }
+      })
+      .catch((err) =>
+        console.error(`[email] doctor_welcome to ${email} threw:`, err.message),
+      );
+    return;
   } catch (err) {
     if (authUserId) {
       await supabase.auth.admin.deleteUser(authUserId).catch(() => {});
@@ -211,7 +235,111 @@ const createDoctorAccount = async (req, res) => {
   }
 };
 
+// ============================================================
+// EMAIL TEMPLATES (admin only)
+// ============================================================
+
+const { previewTemplate } = require("../services/email.service");
+
+// Sample data used to render previews so the admin sees realistic output
+// without exposing a real doctor's credentials.
+const SAMPLE_VARS = {
+  doctor_welcome: {
+    full_name: "Aymen Toumi",
+    email: "doctor@example.com",
+    password: "Temp-Pa55word!",
+    login_url: `${(process.env.FRONTEND_URL || "").replace(/\/$/, "")}/login`,
+  },
+};
+
+// GET /api/admin/templates — list all templates.
+const listTemplates = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("email_templates")
+      .select("key, name, subject, body_html, variables, updated_at")
+      .order("name");
+    if (error) {
+      return res
+        .status(500)
+        .json({ message: "Could not load templates", error: error.message });
+    }
+    return res.status(200).json({ templates: data || [] });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// GET /api/admin/templates/:key — fetch one template.
+const getTemplate = async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("email_templates")
+      .select("key, name, subject, body_html, variables, updated_at")
+      .eq("key", req.params.key)
+      .single();
+    if (error || !data) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+    return res.status(200).json({ template: data });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// PUT /api/admin/templates/:key — update subject/body. We only allow editing
+// existing templates (no create/delete) so a code-referenced key can't vanish.
+const updateTemplate = async (req, res) => {
+  const { subject, body_html } = req.body;
+  try {
+    const { data, error } = await supabase
+      .from("email_templates")
+      .update({ subject, body_html, updated_at: new Date().toISOString() })
+      .eq("key", req.params.key)
+      .select("key, name, subject, body_html, variables, updated_at")
+      .single();
+    if (error || !data) {
+      return res
+        .status(404)
+        .json({ message: "Template not found", error: error?.message });
+    }
+    return res
+      .status(200)
+      .json({ message: "Template saved", template: data });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// POST /api/admin/templates/:key/preview — render with sample data (or the
+// admin's in-progress draft body) WITHOUT sending. Lets the editor show a
+// live preview of unsaved changes.
+const previewTemplateHandler = async (req, res) => {
+  const key = req.params.key;
+  const vars = SAMPLE_VARS[key] || {};
+  try {
+    // If the admin sent a draft body, render that; else render the saved one.
+    if (typeof req.body?.body_html === "string") {
+      const { renderTemplate } = require("../services/email.service");
+      return res.status(200).json({
+        subject: renderTemplate(req.body.subject || "", vars),
+        html: renderTemplate(req.body.body_html, vars),
+        sample: vars,
+      });
+    }
+    const rendered = await previewTemplate(key, vars);
+    if (!rendered) return res.status(404).json({ message: "Template not found" });
+    return res.status(200).json({ ...rendered, sample: vars });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
 module.exports = {
   getAdminStats,
   createDoctorAccount,
+  listTemplates,
+  getTemplate,
+  updateTemplate,
+  previewTemplateHandler,
 };
